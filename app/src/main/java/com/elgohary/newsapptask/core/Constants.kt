@@ -10,4 +10,3 @@ object Constants {
 
     const val HEADER_API_KEY = "X-Api-Key"
 }
-
