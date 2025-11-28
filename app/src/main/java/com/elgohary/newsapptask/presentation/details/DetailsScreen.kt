@@ -74,7 +74,7 @@ fun DetailsScreen(
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                androidx.compose.foundation.layout.Box(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(220.dp),
@@ -111,11 +111,8 @@ fun DetailsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             val description = article.description.orEmpty()
-            val displayedText = if (expanded || description.length <= 200) {
-                description
-            } else {
-                description.take(200) + "..."
-            }
+            val contentFull = article.content.orEmpty()
+            val displayedText = if (expanded || description.length <= 200) description else description.take(200) + "..."
 
             Text(
                 text = if (description.isNotBlank()) "$displayedText  Read more" else "Read more",
@@ -124,14 +121,32 @@ fun DetailsScreen(
                     if (!expanded) {
                         setExpanded(true)
                     } else {
-                        val url = article.url
-                        if (!url.isNullOrEmpty()) {
-                            val customTabsIntent = CustomTabsIntent.Builder().build()
-                            customTabsIntent.launchUrl(context, Uri.parse(url))
-                        }
+                        // When fully expanded, show more details inline (content)
+                        // And still allow opening Custom Tab via second section below
                     }
                 }
             )
+
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = contentFull,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+                val url = article.url
+                if (!url.isNullOrEmpty()) {
+                    Text(
+                        text = "Open in browser",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.clickable {
+                            val customTabsIntent = CustomTabsIntent.Builder().build()
+                            customTabsIntent.launchUrl(context, Uri.parse(url))
+                        }
+                    )
+                }
+            }
         }
     }
 }

@@ -18,7 +18,7 @@ import com.elgohary.newsapptask.presentation.common.EmptyScreen
 @Composable
 fun FavoritesScreen(
     viewModel: FavoritesViewModel = hiltViewModel(),
-    onArticleClick: (String) -> Unit
+    onArticleClick: (com.elgohary.newsapptask.domain.model.Article) -> Unit
 ) {
     val favorites by viewModel.favorites.collectAsState()
 
@@ -31,7 +31,7 @@ fun FavoritesScreen(
                     items(favorites) { article ->
                         ArticleCard(
                             article = article,
-                            onClick = { onArticleClick(article.url ?: "") }
+                            onClick = { onArticleClick(article) }
                         )
                     }
                 }

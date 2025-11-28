@@ -15,7 +15,6 @@ class NewsListViewModel @Inject constructor(
     getNewsUseCase: GetNewsUseCase
 ) : ViewModel() {
 
-    val articles: Flow<PagingData<Article>> =
-        getNewsUseCase().cachedIn(viewModelScope)
+    val articles: Flow<PagingData<Article>> = getNewsUseCase().cachedIn(viewModelScope)
 }
 

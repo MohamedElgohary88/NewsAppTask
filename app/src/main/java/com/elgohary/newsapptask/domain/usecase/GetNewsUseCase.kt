@@ -17,4 +17,3 @@ class GetNewsUseCase @Inject constructor(
         return repository.getTopHeadlines(country = country, pageSize = pageSize)
     }
 }
-
