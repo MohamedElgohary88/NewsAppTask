@@ -18,12 +18,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.presentation.details.DetailsScreen
 import com.elgohary.newsapptask.presentation.favorites.FavoritesScreen
 import com.elgohary.newsapptask.presentation.news_list.NewsListScreen
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 sealed class Screen(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector?) {
