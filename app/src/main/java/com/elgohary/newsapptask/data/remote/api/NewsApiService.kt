@@ -13,4 +13,3 @@ interface NewsApiService {
         @Query("pageSize") pageSize: Int
     ): Response<NewsResponseDto>
 }
-
