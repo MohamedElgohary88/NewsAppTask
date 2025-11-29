@@ -52,6 +52,8 @@ This project has been refactored to centralize UI state into single `UiState` cl
 
 ##  Demo Video
 
+https://youtube.com/shorts/3he7RH0rA1g
+
 https://github.com/user-attachments/assets/8328b19e-3cf5-4929-b38e-45000512bf53
 
 ## Architecture & Patterns
