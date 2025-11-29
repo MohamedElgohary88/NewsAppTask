@@ -7,28 +7,9 @@ import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.domain.usecase.DeleteArticleUseCase
 import com.elgohary.newsapptask.domain.usecase.SelectArticlesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-data class FavoritesUiState(
-    val favorites: List<Article> = emptyList(),
-    val isLoading: Boolean = false,
-    val isOffline: Boolean = false,
-    val isEmpty: Boolean = false,
-    val errorMessage: String? = null
-)
-
-sealed interface FavoritesEvent {
-    data class OnArticleClick(val article: Article) : FavoritesEvent
-    data class OnDeleteClick(val article: Article) : FavoritesEvent
-    object OnRetry : FavoritesEvent
-}
 
 @HiltViewModel
 class FavoritesViewModel @Inject constructor(
@@ -37,41 +18,42 @@ class FavoritesViewModel @Inject constructor(
     connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(FavoritesUiState(isLoading = true))
-    val uiState: StateFlow<FavoritesUiState> = _uiState
+    // Internal State
+    private val _favoritesFlow = MutableStateFlow<List<Article>>(emptyList())
+    private val _isLoading = MutableStateFlow(true)
+    private val _error = MutableStateFlow<String?>(null)
 
-    private val connectivityFlow = connectivityObserver.observe().stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5_000),
-        ConnectivityObserver.Status.Unavailable
-    )
+    // Combined UI State
+    val uiState: StateFlow<FavoritesUiState> = combine(
+        _favoritesFlow,
+        _isLoading,
+        _error,
+        connectivityObserver.observe()
+    ) { favorites, loading, error, connectivity ->
+        FavoritesUiState(
+            favorites = favorites,
+            isLoading = loading,
+            isEmpty = favorites.isEmpty() && !loading,
+            errorMessage = error,
+            isOffline = connectivity != ConnectivityObserver.Status.Available
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FavoritesUiState())
 
     init {
         observeFavorites()
-        observeConnectivity()
     }
 
     private fun observeFavorites() {
         viewModelScope.launch {
-            selectArticlesUseCase().collectLatest { list ->
-                _uiState.update {
-                    it.copy(
-                        favorites = list,
-                        isEmpty = list.isEmpty(),
-                        isLoading = false,
-                        errorMessage = null
-                    )
+            _isLoading.value = true
+            try {
+                selectArticlesUseCase().collectLatest { list ->
+                    _favoritesFlow.value = list
+                    _isLoading.value = false
                 }
-            }
-        }
-    }
-
-    private fun observeConnectivity() {
-        viewModelScope.launch {
-            connectivityFlow.collectLatest { status ->
-                _uiState.update {
-                    it.copy(isOffline = status != ConnectivityObserver.Status.Available)
-                }
+            } catch (e: Exception) {
+                _error.value = e.localizedMessage
+                _isLoading.value = false
             }
         }
     }
@@ -79,15 +61,9 @@ class FavoritesViewModel @Inject constructor(
     fun onEvent(event: FavoritesEvent) {
         when (event) {
             is FavoritesEvent.OnDeleteClick -> deleteArticle(event.article)
-            is FavoritesEvent.OnArticleClick -> { /* navigation handled by caller */ }
-            FavoritesEvent.OnRetry -> refresh()
+            is FavoritesEvent.OnArticleClick -> { /* Navigation handled by Route */ }
+            FavoritesEvent.OnRetry -> { /* Retry logic if needed */ }
         }
-    }
-
-    private fun refresh() {
-        // No explicit refresh source here (local DB is always observed),
-        // but we clear any error and could re-trigger observation if needed.
-        _uiState.update { it.copy(errorMessage = null, isLoading = false) }
     }
 
     private fun deleteArticle(article: Article) {

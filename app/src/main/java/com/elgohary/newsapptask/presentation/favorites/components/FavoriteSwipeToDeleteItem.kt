@@ -1,15 +1,13 @@
 package com.elgohary.newsapptask.presentation.favorites.components
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.presentation.common.ArticleCard
 
@@ -47,26 +45,5 @@ fun FavoriteSwipeToDeleteItem(
             .clip(CardDefaults.shape)
     ) {
         ArticleCard(article = article, modifier = Modifier.fillMaxWidth(), onClick = onClick)
-    }
-}
-
-@Composable
-private fun DismissBackground(dismissState: SwipeToDismissBoxState) {
-    val isDeleteSide = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (isDeleteSide) MaterialTheme.colorScheme.errorContainer else Color.Transparent)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.End
-    ) {
-        if (isDeleteSide) {
-            Icon(
-                imageVector = Icons.Filled.Delete,
-                contentDescription = "Delete",
-                tint = MaterialTheme.colorScheme.onErrorContainer
-            )
-        }
     }
 }

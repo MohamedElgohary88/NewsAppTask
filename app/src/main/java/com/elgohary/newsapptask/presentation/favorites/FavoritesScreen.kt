@@ -9,28 +9,15 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.presentation.common.EmptyScreen
 import com.elgohary.newsapptask.presentation.designsystem.Strings
 import com.elgohary.newsapptask.presentation.favorites.components.FavoriteSwipeToDeleteItem
-
-@Composable
-fun FavoritesRoute(
-    onArticleClick: (Article) -> Unit,
-    viewModel: FavoritesViewModel = hiltViewModel()
-) {
-    val state by viewModel.uiState.collectAsState()
-    FavoritesScreen(
-        state = state,
-        onEvent = viewModel::onEvent,
-        onArticleClick = onArticleClick
-    )
-}
+import kotlinx.coroutines.launch
 
 @Composable
 fun FavoritesScreen(
@@ -38,7 +25,8 @@ fun FavoritesScreen(
     onEvent: (FavoritesEvent) -> Unit,
     onArticleClick: (Article) -> Unit
 ) {
-    val snackbarHostState = SnackbarHostState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -49,14 +37,14 @@ fun FavoritesScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // subtle top padding so first card is fully visible under system bars
+            // Subtle top padding
             Spacer(modifier = Modifier.height(8.dp))
 
-            // connectivity banner
+            // Connectivity Banner
             if (state.isOffline) {
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Text(
-                        text = "No Internet Connection",
+                        text = "No Internet Connection - Showing Local Data",
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 6.dp, horizontal = 16.dp),
@@ -70,7 +58,19 @@ fun FavoritesScreen(
             FavoritesContent(
                 favorites = state.favorites,
                 onArticleClick = onArticleClick,
-                onDelete = { article -> onEvent(FavoritesEvent.OnDeleteClick(article)) }
+                onDelete = { article ->
+                    // 1. Notify ViewModel to delete
+                    onEvent(FavoritesEvent.OnDeleteClick(article))
+
+                    // 2. Show Snackbar
+                    scope.launch {
+                        snackbarHostState.currentSnackbarData?.dismiss()
+                        snackbarHostState.showSnackbar(
+                            message = "Removed from favorites",
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                }
             )
         }
     }
@@ -83,6 +83,7 @@ private fun FavoritesContent(
     onDelete: (Article) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
+        // Empty State
         AnimatedVisibility(
             visible = favorites.isEmpty(),
             enter = fadeIn(),
@@ -91,6 +92,7 @@ private fun FavoritesContent(
             EmptyScreen(title = Strings.EmptyNews, message = "No favorites yet")
         }
 
+        // List State
         AnimatedVisibility(
             visible = favorites.isNotEmpty(),
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 8 }),
@@ -103,14 +105,12 @@ private fun FavoritesContent(
             ) {
                 itemsIndexed(
                     items = favorites,
-                    key = { index, item -> item.url ?: item.title ?: "fav_$index" }
+                    // Unique key handling to prevent UI glitches during deletion
+                    key = { _, item -> item.url ?: item.title.hashCode() }
                 ) { _, article ->
                     FavoriteSwipeToDeleteItem(
                         article = article,
-                        onClick = {
-                            onArticleClick(article)
-                            onEvent(FavoritesEvent.OnArticleClick(article))
-                        },
+                        onClick = { onArticleClick(article) },
                         onDelete = onDelete
                     )
                 }

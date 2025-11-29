@@ -17,10 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-@Composable
-fun DismissBackground(dismissState: SwipeToDismissBoxState) {
-    // Show red container and icon only on the delete side, and keep it
-    // visually "next to" the card by aligning to the swipe direction.
+@Composable fun DismissBackground(dismissState: SwipeToDismissBoxState) {
     val isDeleteSide = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart
 
     Row(

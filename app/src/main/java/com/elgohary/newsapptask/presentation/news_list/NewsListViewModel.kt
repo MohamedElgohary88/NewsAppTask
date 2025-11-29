@@ -15,30 +15,20 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class NewsListUiState(
-    val isOffline: Boolean = false,
-    val gateActive: Boolean = false,
-    val errorMsg: String? = null
-)
-
-sealed interface NewsListEvent {
-    data class OnArticleClick(val article: Article) : NewsListEvent
-    object OnRetry : NewsListEvent
-}
-
 @HiltViewModel
 class NewsListViewModel @Inject constructor(
     getNewsUseCase: GetNewsUseCase,
     private val connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
-    val articles: kotlinx.coroutines.flow.Flow<PagingData<Article>> =
+    val articles: Flow<PagingData<Article>> =
         getNewsUseCase().cachedIn(viewModelScope)
 
     private val _state = MutableStateFlow(NewsListUiState())
     val state: StateFlow<NewsListUiState> = _state
 
     private var gateJob: Job? = null
+    private var lastBoundaryCount = 0
 
     init {
         observeConnectivity()
@@ -47,33 +37,38 @@ class NewsListViewModel @Inject constructor(
     private fun observeConnectivity() {
         viewModelScope.launch {
             connectivityObserver.observe().collectLatest { status ->
-                _state.update { it.copy(isOffline = status != ConnectivityObserver.Status.Available) }
+                _state.update {
+                    it.copy(isOffline = status != ConnectivityObserver.Status.Available)
+                }
             }
-        }
-    }
-
-    fun onItemCountChanged(count: Int) {
-        if (count <= 0) return
-        val pageSize = Constants.DEFAULT_PAGE_SIZE
-        // We only need gateActive now; boundary is implicit.
-        if (count % pageSize == 0) {
-            startGate()
-        }
-    }
-
-    private fun startGate() {
-        gateJob?.cancel()
-        gateJob = viewModelScope.launch {
-            _state.update { it.copy(gateActive = true) }
-            delay(3000)
-            _state.update { it.copy(gateActive = false) }
         }
     }
 
     fun onEvent(event: NewsListEvent) {
         when (event) {
-            is NewsListEvent.OnArticleClick -> { /* navigation handled by caller */ }
+            is NewsListEvent.OnArticleClick -> { /* Navigation handled by Route/Caller */ }
             NewsListEvent.OnRetry -> _state.update { it.copy(errorMsg = null) }
+            is NewsListEvent.OnItemCountChanged -> handleGateLogic(event.count)
+        }
+    }
+
+    private fun handleGateLogic(count: Int) {
+        if (count <= 0) return
+        val pageSize = Constants.DEFAULT_PAGE_SIZE
+
+
+        if (count % pageSize == 0 && count != lastBoundaryCount) {
+            lastBoundaryCount = count
+            triggerGate()
+        }
+    }
+
+    private fun triggerGate() {
+        gateJob?.cancel()
+        gateJob = viewModelScope.launch {
+            _state.update { it.copy(gateActive = true) }
+            delay(3000)
+            _state.update { it.copy(gateActive = false) }
         }
     }
 }
