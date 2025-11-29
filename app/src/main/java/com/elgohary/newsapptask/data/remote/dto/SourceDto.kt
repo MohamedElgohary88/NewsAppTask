@@ -6,4 +6,3 @@ data class SourceDto(
     @SerializedName("id") val id: String?,
     @SerializedName("name") val name: String?
 )
-

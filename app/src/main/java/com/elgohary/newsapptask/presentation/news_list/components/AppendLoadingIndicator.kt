@@ -1,6 +1,8 @@
 package com.elgohary.newsapptask.presentation.news_list.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,4 +18,3 @@ fun AppendLoadingIndicator() {
         contentAlignment = Alignment.Center
     ) { CircularProgressIndicator() }
 }
-

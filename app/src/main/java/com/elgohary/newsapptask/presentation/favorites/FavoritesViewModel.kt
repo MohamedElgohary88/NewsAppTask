@@ -18,12 +18,10 @@ class FavoritesViewModel @Inject constructor(
     connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
-    // Internal State
     private val _favoritesFlow = MutableStateFlow<List<Article>>(emptyList())
     private val _isLoading = MutableStateFlow(true)
     private val _error = MutableStateFlow<String?>(null)
 
-    // Combined UI State
     val uiState: StateFlow<FavoritesUiState> = combine(
         _favoritesFlow,
         _isLoading,

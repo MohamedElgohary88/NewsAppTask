@@ -25,7 +25,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector?
         // Helper to Create Route with Data
         fun createRoute(article: Article): String {
             val json = articleJson.encodeToString(article)
-            val encodedJson = Uri.encode(json) // Encode to handle special chars like '/'
+            val encodedJson = Uri.encode(json)
             return "details/$encodedJson"
         }
 

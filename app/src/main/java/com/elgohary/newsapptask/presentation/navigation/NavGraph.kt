@@ -1,5 +1,6 @@
 package com.elgohary.newsapptask.presentation.navigation
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -23,11 +24,10 @@ fun NewsNavHost(
     val items = listOf(Screen.NewsList, Screen.Favorites)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-
-
     val showBottomBar = currentRoute == Screen.NewsList.route || currentRoute == Screen.Favorites.route
 
     Scaffold(
+        modifier = modifier.fillMaxSize(),
         bottomBar = {
             if (showBottomBar) {
                 NewsBottomNavigation(

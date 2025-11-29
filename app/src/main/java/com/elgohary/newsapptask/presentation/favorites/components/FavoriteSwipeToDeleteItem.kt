@@ -25,7 +25,6 @@ fun FavoriteSwipeToDeleteItem(
         confirmValueChange = { value ->
             when (value) {
                 SwipeToDismissBoxValue.EndToStart -> {
-                    isRemoved = true
                     onDelete(currentItem)
                     true
                 }

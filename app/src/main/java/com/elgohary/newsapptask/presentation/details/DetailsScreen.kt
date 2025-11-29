@@ -22,12 +22,13 @@ fun DetailsScreen(
     onEvent: (DetailsEvent) -> Unit
 ) {
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             DetailsTopBar(onBack = { onEvent(DetailsEvent.OnBackClicked) })
         },
         floatingActionButton = {
             AnimatedVisibility(
-                visible = !state.isBookmarked, // Hide FAB if already saved
+                visible = !state.isBookmarked,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
