@@ -3,20 +3,28 @@ package com.elgohary.newsapptask.presentation.details
 import android.net.Uri
 import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -25,6 +33,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.elgohary.newsapptask.domain.model.Article
+import com.elgohary.newsapptask.presentation.common.ShimmerEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,118 +44,196 @@ fun DetailsScreen(
 ) {
     val context = LocalContext.current
     val savedUrls by viewModel.savedUrls.collectAsState()
-    val isSaved = article.url != null && savedUrls.contains(article.url)
-    val (expanded, setExpanded) = remember { mutableStateOf(false) }
+    val alreadySaved = article.url?.let { savedUrls.contains(it) } == true
+    val expandedState = rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(text = "Full article") },
-                navigationIcon = {
-                    IconButton(onClick = { navController?.popBackStack() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
+            DetailsTopBar(onBack = { navController?.popBackStack() })
         },
         floatingActionButton = {
-            if (!isSaved) {
-                FloatingActionButton(onClick = {
+            AnimatedVisibility(
+                visible = !alreadySaved,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                SaveFab(onClick = {
                     viewModel.saveArticle(article)
                     Toast.makeText(context, "Saved to favorites", Toast.LENGTH_SHORT).show()
-                }) {
-                    Icon(imageVector = Icons.Filled.Bookmark, contentDescription = "Save")
-                }
+                })
             }
         }
-    ) { paddingValues ->
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
         ) {
-            val painter = rememberAsyncImagePainter(model = article.urlToImage)
-            val painterState = painter.state
+            ArticleHeaderImage(imageUrl = article.urlToImage, title = article.title)
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(220.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    when (painterState) {
-                        is AsyncImagePainter.State.Loading -> CircularProgressIndicator()
-                        is AsyncImagePainter.State.Error -> Text(text = "No Image")
-                        else -> AsyncImage(
-                            model = article.urlToImage,
-                            contentDescription = article.title,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = article.title ?: "",
-                style = MaterialTheme.typography.headlineSmall,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = article.publishedAt ?: "",
-                style = MaterialTheme.typography.bodySmall
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val description = article.description.orEmpty()
-            val contentFull = article.content.orEmpty()
-            val displayedText = if (expanded || description.length <= 200) description else description.take(200) + "..."
-
-            Text(
-                text = if (description.isNotBlank()) "$displayedText  Read more" else "Read more",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.clickable {
-                    if (!expanded) {
-                        setExpanded(true)
-                    } else {
-                        // When fully expanded, show more details inline (content)
-                        // And still allow opening Custom Tab via second section below
-                    }
-                }
-            )
-
-            if (expanded) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = contentFull,
-                    style = MaterialTheme.typography.bodyMedium
+            Column(modifier = Modifier.padding(16.dp)) {
+                ArticleTitleAndMeta(
+                    title = article.title.orEmpty(),
+                    publishedAt = article.publishedAt.orEmpty(),
+                    sourceName = article.source?.name
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
-                val url = article.url
-                if (!url.isNullOrEmpty()) {
-                    Text(
-                        text = "Open in browser",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.clickable {
-                            val customTabsIntent = CustomTabsIntent.Builder().build()
-                            customTabsIntent.launchUrl(context, Uri.parse(url))
-                        }
-                    )
-                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                ArticleDescription(
+                    description = article.description,
+                    content = article.content,
+                    isExpanded = expandedState.value,
+                    onToggleExpand = { expandedState.value = !expandedState.value },
+                    articleUrl = article.url
+                )
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DetailsTopBar(onBack: () -> Unit) {
+    TopAppBar(
+        title = { Text(text = "Full Article") },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            }
+        }
+    )
+}
+
+@Composable
+private fun SaveFab(onClick: () -> Unit) {
+    FloatingActionButton(onClick = onClick) {
+        Icon(imageVector = Icons.Filled.Bookmark, contentDescription = "Save Article")
+    }
+}
+
+@Composable
+private fun ArticleHeaderImage(imageUrl: String?, title: String?) {
+    val painter = rememberAsyncImagePainter(model = imageUrl)
+    val painterState = painter.state
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(240.dp)
+            .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        when (painterState.collectAsState().value) {
+            is AsyncImagePainter.State.Loading -> ShimmerEffect(modifier = Modifier.fillMaxSize())
+            is AsyncImagePainter.State.Error -> Text(
+                text = "No Image",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            else -> AsyncImage(
+                model = imageUrl,
+                contentDescription = title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+    }
+}
+
+@Composable
+private fun ArticleTitleAndMeta(title: String, publishedAt: String, sourceName: String?) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.headlineSmall,
+        maxLines = 4,
+        overflow = TextOverflow.Ellipsis
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (!sourceName.isNullOrBlank()) {
+            Text(
+                text = sourceName,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text(
+            text = publishedAt,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun ArticleDescription(
+    description: String?,
+    content: String?,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
+    articleUrl: String?
+) {
+    val context = LocalContext.current
+    val descSafe = description.orEmpty()
+    val contentSafe = content.orEmpty()
+
+    val collapsedCharLimit = 220
+    val needsCollapse = descSafe.length > collapsedCharLimit && !isExpanded
+    val visibleText = if (needsCollapse) descSafe.take(collapsedCharLimit) + "…" else descSafe
+
+    Text(
+        text = visibleText,
+        style = MaterialTheme.typography.bodyMedium
+    )
+
+    if (needsCollapse || (!isExpanded && contentSafe.isNotBlank() && descSafe.isNotBlank())) {
+        ReadMoreLink(onClick = onToggleExpand)
+    }
+
+    AnimatedVisibility(visible = isExpanded) {
+        Column {
+            if (contentSafe.isNotBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = contentSafe,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            if (!articleUrl.isNullOrBlank()) {
+                OpenInBrowserLink(onOpen = {
+                    val customTabsIntent = CustomTabsIntent.Builder().build()
+                    customTabsIntent.launchUrl(context, Uri.parse(articleUrl))
+                })
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReadMoreLink(onClick: () -> Unit) {
+    Text(
+        text = "Read more",
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .padding(top = 8.dp)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = "Read more" }
+    )
+}
+
+@Composable
+private fun OpenInBrowserLink(onOpen: () -> Unit) {
+    Text(
+        text = "Open in browser",
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .clickable(onClick = onOpen)
+            .semantics { contentDescription = "Open article in browser" }
+    )
 }
