@@ -42,12 +42,12 @@ fun NewsListScreen(
             }
 
             Box(modifier = Modifier.fillMaxSize()) {
-                when (val refreshState = pagingItems.loadState.refresh) {
+                when (pagingItems.loadState.refresh) {
                     is LoadState.Loading -> LoadingListPlaceholder()
 
                     is LoadState.Error -> ErrorScreen(
-                        title = stringResource(R.string.unknown_error),
-                        message = refreshState.error.localizedMessage ?: stringResource(R.string.unknown_error),
+                        title = stringResource(R.string.no_internet_title),
+                        message = stringResource(R.string.check_your_connection),
                         onRetry = { pagingItems.retry(); onEvent(NewsListEvent.OnRetry) }
                     )
 

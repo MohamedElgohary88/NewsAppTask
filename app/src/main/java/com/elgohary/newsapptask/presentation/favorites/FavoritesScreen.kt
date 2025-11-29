@@ -15,9 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.elgohary.newsapptask.R
 import com.elgohary.newsapptask.domain.model.Article
-import com.elgohary.newsapptask.presentation.designsystem.common.EmptyScreen
-import com.elgohary.newsapptask.presentation.designsystem.common.ErrorScreen
 import com.elgohary.newsapptask.presentation.designsystem.Dimens
+import com.elgohary.newsapptask.presentation.designsystem.common.EmptyScreen
 import com.elgohary.newsapptask.presentation.favorites.components.FavoriteSwipeToDeleteItem
 import kotlinx.coroutines.launch
 
@@ -41,14 +40,6 @@ fun FavoritesScreen(
                 .padding(paddingValues)
         ) {
             Spacer(modifier = Modifier.height(Dimens.SpacingSM))
-            if (state.isOffline) {
-                ErrorScreen(
-                    title = stringResource(R.string.no_internet_title),
-                    message = stringResource(R.string.check_your_connection),
-                    onRetry = { onEvent(FavoritesEvent.OnRetry) }
-                )
-            }
-
             FavoritesContent(
                 favorites = state.favorites,
                 onArticleClick = { article -> onEvent(FavoritesEvent.OnArticleClick(article)) },
