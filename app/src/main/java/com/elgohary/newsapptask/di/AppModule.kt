@@ -28,18 +28,14 @@ object AppModule {
     fun provideOkHttpClient(): OkHttpClient {
         val apiKeyInterceptor = Interceptor { chain ->
             val original = chain.request()
-            val originalUrl = original.url
-            val newUrl = originalUrl.newBuilder().build()
             val newRequest = original.newBuilder()
                 .header(Constants.HEADER_API_KEY, BuildConfig.NEWS_API_KEY)
-                .url(newUrl)
+                .url(original.url) // use original URL directly; no redundant rebuild
                 .build()
             chain.proceed(newRequest)
         }
 
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
-        }
+        val logging = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }
 
         return OkHttpClient.Builder()
             .addInterceptor(apiKeyInterceptor)
@@ -57,13 +53,14 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideApiService(retrofit: Retrofit): NewsApiService =
-        retrofit.create(NewsApiService::class.java)
+    fun provideApiService(retrofit: Retrofit): NewsApiService = retrofit.create(NewsApiService::class.java)
 
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): NewsDatabase =
-        Room.databaseBuilder(context, NewsDatabase::class.java, Constants.DATABASE_NAME).build()
+        Room.databaseBuilder(context, NewsDatabase::class.java, Constants.DATABASE_NAME)
+            .fallbackToDestructiveMigration() // allow schema changes (e.g., adding unique index) without crashes in dev
+            .build()
 
     @Provides
     @Singleton

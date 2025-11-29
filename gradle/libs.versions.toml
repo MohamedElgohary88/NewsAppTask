@@ -22,11 +22,10 @@ room = "2.8.0"
 
 retrofit = "3.0.0"
 paging = "3.3.6"
-kotlix-serialization = "1.9.0"
+kotlinx-serialization = "1.9.0"
 
 coil = "3.3.0"
 androidx-browser = "1.8.0"
-material-icons = "1.7.5"
 
 
 [libraries]
@@ -68,7 +67,7 @@ androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", 
 androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
 
 # KotlinX
-kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlix-serialization" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
@@ -78,7 +77,8 @@ coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp"
 
 # AndroidX Browser
 androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "androidx-browser" }
-androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "material-icons" }
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+androidx-compose-material = { group = "androidx.compose.material", name = "material" }
 
 
 [plugins]

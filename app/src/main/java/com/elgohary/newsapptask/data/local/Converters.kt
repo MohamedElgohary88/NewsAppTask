@@ -11,4 +11,3 @@ object Converters {
     @JvmStatic
     fun intToBoolean(value: Int?): Boolean? = value?.let { it == 1 }
 }
-

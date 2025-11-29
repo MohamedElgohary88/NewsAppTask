@@ -21,7 +21,6 @@ import com.elgohary.newsapptask.presentation.common.ErrorScreen
 import com.elgohary.newsapptask.presentation.common.ShimmerEffect
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewsListScreen(
     onArticleClick: (Article) -> Unit,
@@ -38,15 +37,16 @@ fun NewsListScreen(
 
     LaunchedEffect(pagingItems.itemCount) {
         val current = pagingItems.itemCount
-        // Trigger only when we cross a new full page boundary (exclude first boundary where lastBoundaryCount==0)
         if (current > 0 && current % pageSize == 0 && current != lastBoundaryCount) {
             gateActive = true
             gateVisibleItemCount = lastBoundaryCount
             delay(3000L)
             gateActive = false
+            // Update boundary so future multiples trigger again
+            lastBoundaryCount = current
+            gateVisibleItemCount = current
         } else if (lastBoundaryCount == 0 && current > 0) {
-            // Initialize after first batch
-            lastBoundaryCount = current - (current % pageSize) // nearest boundary <= current
+            lastBoundaryCount = current - (current % pageSize)
             gateVisibleItemCount = lastBoundaryCount
         }
     }

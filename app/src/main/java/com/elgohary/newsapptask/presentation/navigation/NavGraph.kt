@@ -2,44 +2,43 @@ package com.elgohary.newsapptask.presentation.navigation
 
 import android.net.Uri
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.padding
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
 import com.elgohary.newsapptask.presentation.details.DetailsScreen
 import com.elgohary.newsapptask.presentation.favorites.FavoritesScreen
 import com.elgohary.newsapptask.presentation.news_list.NewsListScreen
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+
+// Configure Json once
+private val articleJson = Json {
+    ignoreUnknownKeys = true
+    encodeDefaults = true
+}
 
 sealed class Screen(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector?) {
-    object NewsList : Screen("news_list", "Top Headlines", Icons.Filled.Article)
+    object NewsList : Screen("news_list", "Top Headlines", Icons.AutoMirrored.Filled.Article)
     object Favorites : Screen("favorites", "Saved", Icons.Filled.Bookmark)
     object Details : Screen("details/{articleJson}", "Details", null) {
         fun createRoute(article: com.elgohary.newsapptask.domain.model.Article): String {
-            val json = Json.encodeToString(article)
-            val encoded = Uri.encode(json)
-            return "details/$encoded"
+            val jsonEncoded = Uri.encode(articleJson.encodeToString(article))
+            return "details/$jsonEncoded"
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewsNavHost(
-    navController: NavHostController = rememberNavController(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    navController: NavHostController = rememberNavController()
 ) {
     val items = listOf(Screen.NewsList, Screen.Favorites)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -63,9 +62,7 @@ fun NewsNavHost(
                                     }
                                 }
                             },
-                            icon = {
-                                screen.icon?.let { Icon(it, contentDescription = screen.label) }
-                            },
+                            icon = { screen.icon?.let { Icon(it, contentDescription = screen.label) } },
                             label = { Text(screen.label) }
                         )
                     }
@@ -76,28 +73,29 @@ fun NewsNavHost(
         NavHost(
             navController = navController,
             startDestination = Screen.NewsList.route,
-            modifier = modifier
+            modifier = modifier.padding(innerPadding)
         ) {
             composable(Screen.NewsList.route) {
-                NewsListScreen(
-                    onArticleClick = { article ->
-                        navController.navigate(Screen.Details.createRoute(article))
-                    }
-                )
+                NewsListScreen(onArticleClick = { article ->
+                    navController.navigate(Screen.Details.createRoute(article))
+                })
             }
-
             composable(Screen.Favorites.route) {
-                FavoritesScreen(
-                    onArticleClick = { article ->
-                        navController.navigate(Screen.Details.createRoute(article))
-                    }
-                )
+                FavoritesScreen(onArticleClick = { article ->
+                    navController.navigate(Screen.Details.createRoute(article))
+                })
             }
-
             composable(Screen.Details.route) { backStackEntry ->
                 val encodedJson = backStackEntry.arguments?.getString("articleJson")
-                val json = encodedJson?.let { Uri.decode(it) }
-                val article = if (!json.isNullOrEmpty()) Json.decodeFromString<com.elgohary.newsapptask.domain.model.Article>(json) else com.elgohary.newsapptask.domain.model.Article(null, null, null, null, null, null, null, null)
+                if (encodedJson == null) {
+                    navController.popBackStack(); return@composable
+                }
+                val decoded = Uri.decode(encodedJson)
+                val article = try {
+                    articleJson.decodeFromString<com.elgohary.newsapptask.domain.model.Article>(decoded)
+                } catch (e: SerializationException) {
+                    navController.popBackStack(); return@composable
+                }
                 DetailsScreen(article = article, navController = navController)
             }
         }
