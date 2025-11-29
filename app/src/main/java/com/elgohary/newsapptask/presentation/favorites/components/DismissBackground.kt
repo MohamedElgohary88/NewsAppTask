@@ -24,7 +24,7 @@ fun DismissBackground(dismissState: SwipeToDismissBoxState) {
     Column (
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
-            .fillMaxHeight().width(30.dp)
+            .fillMaxHeight().width(80.dp)
             .background(
                 if (isDeleteSide) MaterialTheme.colorScheme.errorContainer
                 else Color.Transparent
