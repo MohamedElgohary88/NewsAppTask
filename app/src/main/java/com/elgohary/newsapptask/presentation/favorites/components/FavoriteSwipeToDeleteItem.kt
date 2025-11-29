@@ -24,11 +24,11 @@ fun FavoriteSwipeToDeleteItem(
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             when (value) {
-                SwipeToDismissBoxValue.EndToStart -> {
+                SwipeToDismissBoxValue.StartToEnd -> {
                     onDelete(currentItem)
                     true
                 }
-                SwipeToDismissBoxValue.StartToEnd, SwipeToDismissBoxValue.Settled -> false
+                SwipeToDismissBoxValue.EndToStart, SwipeToDismissBoxValue.Settled -> false
             }
         },
         positionalThreshold = { it * 0.25f }
@@ -37,8 +37,8 @@ fun FavoriteSwipeToDeleteItem(
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = { DismissBackground(dismissState) },
-        enableDismissFromStartToEnd = false,
-        enableDismissFromEndToStart = true,
+        enableDismissFromStartToEnd = true,
+        enableDismissFromEndToStart = false,
         modifier = Modifier
             .fillMaxWidth()
             .clip(CardDefaults.shape)
