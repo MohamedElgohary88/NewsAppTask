@@ -62,7 +62,7 @@ class FavoritesViewModel @Inject constructor(
         when (event) {
             is FavoritesEvent.OnDeleteClick -> deleteArticle(event.article)
             is FavoritesEvent.OnArticleClick -> { /* Navigation handled by Route */ }
-            FavoritesEvent.OnRetry -> { /* Retry logic if needed */ }
+            FavoritesEvent.OnRetry -> { observeFavorites() }
         }
     }
 

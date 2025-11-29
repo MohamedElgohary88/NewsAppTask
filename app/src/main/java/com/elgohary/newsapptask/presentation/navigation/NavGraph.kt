@@ -24,7 +24,7 @@ fun NewsNavHost(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Logic to show BottomBar only on main screens
+
     val showBottomBar = currentRoute == Screen.NewsList.route || currentRoute == Screen.Favorites.route
 
     Scaffold(

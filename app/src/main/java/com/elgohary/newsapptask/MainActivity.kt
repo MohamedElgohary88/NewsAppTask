@@ -10,7 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.elgohary.newsapptask.presentation.navigation.NewsNavHost
-import com.elgohary.newsapptask.ui.theme.NewsAppTaskTheme
+import com.elgohary.newsapptask.presentation.designsystem.NewsAppTaskTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

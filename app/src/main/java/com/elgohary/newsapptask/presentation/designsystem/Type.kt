@@ -1,4 +1,4 @@
-package com.elgohary.newsapptask.ui.theme
+package com.elgohary.newsapptask.presentation.designsystem
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

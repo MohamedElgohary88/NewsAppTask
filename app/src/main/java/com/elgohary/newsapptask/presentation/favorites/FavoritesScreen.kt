@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.presentation.common.EmptyScreen
+import com.elgohary.newsapptask.presentation.common.ErrorScreen
 import com.elgohary.newsapptask.presentation.designsystem.Strings
 import com.elgohary.newsapptask.presentation.favorites.components.FavoriteSwipeToDeleteItem
 import kotlinx.coroutines.launch
@@ -37,32 +38,20 @@ fun FavoritesScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Subtle top padding
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Connectivity Banner
             if (state.isOffline) {
-                Surface(color = MaterialTheme.colorScheme.errorContainer) {
-                    Text(
-                        text = "No Internet Connection - Showing Local Data",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp, horizontal = 16.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
+                ErrorScreen(
+                    title = Strings.NoInternetTitle,
+                    message = Strings.CheckYourConnection,
+                    onRetry = { onEvent(FavoritesEvent.OnRetry) }
+                )
             }
 
             FavoritesContent(
                 favorites = state.favorites,
                 onArticleClick = onArticleClick,
                 onDelete = { article ->
-                    // 1. Notify ViewModel to delete
                     onEvent(FavoritesEvent.OnDeleteClick(article))
-
-                    // 2. Show Snackbar
                     scope.launch {
                         snackbarHostState.currentSnackbarData?.dismiss()
                         snackbarHostState.showSnackbar(
@@ -83,7 +72,6 @@ private fun FavoritesContent(
     onDelete: (Article) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        // Empty State
         AnimatedVisibility(
             visible = favorites.isEmpty(),
             enter = fadeIn(),
@@ -91,8 +79,6 @@ private fun FavoritesContent(
         ) {
             EmptyScreen(title = Strings.EmptyNews, message = "No favorites yet")
         }
-
-        // List State
         AnimatedVisibility(
             visible = favorites.isNotEmpty(),
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 8 }),
@@ -105,7 +91,6 @@ private fun FavoritesContent(
             ) {
                 itemsIndexed(
                     items = favorites,
-                    // Unique key handling to prevent UI glitches during deletion
                     key = { _, item -> item.url ?: item.title.hashCode() }
                 ) { _, article ->
                     FavoriteSwipeToDeleteItem(
