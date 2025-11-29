@@ -16,7 +16,9 @@ interface ArticleDao {
     @Delete
     suspend fun delete(article: ArticleEntity)
 
+    @Query("DELETE FROM articles WHERE url = :url")
+    suspend fun deleteByUrl(url: String)
+
     @Query("SELECT * FROM articles ORDER BY id DESC")
     fun getArticles(): Flow<List<ArticleEntity>>
 }
-

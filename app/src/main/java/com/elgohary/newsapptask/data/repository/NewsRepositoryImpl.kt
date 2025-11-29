@@ -41,18 +41,9 @@ class NewsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteBookmark(article: Article) {
-        val entity = ArticleEntity(
-            sourceId = article.source?.id,
-            sourceName = article.source?.name,
-            author = article.author,
-            title = article.title,
-            description = article.description,
-            url = article.url,
-            urlToImage = article.urlToImage,
-            publishedAt = article.publishedAt,
-            content = article.content
-        )
-        articleDao.delete(entity)
+        // Use URL as natural key to delete, avoiding primary-key mismatch with auto-generated id
+        val url = article.url ?: return
+        articleDao.deleteByUrl(url)
     }
 
     override fun getBookmarks(): Flow<List<Article>> {

@@ -13,20 +13,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Scaffold
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -59,7 +58,7 @@ fun FavoritesScreen(
     val scope = rememberCoroutineScope()
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState)},
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         backgroundColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
@@ -89,6 +88,7 @@ fun FavoritesScreen(
                 favorites = favorites,
                 onArticleClick = onArticleClick,
                 onDelete = { article ->
+                    // Persistently delete from local DB via ViewModel
                     viewModel.deleteArticle(article)
                     scope.launch {
                         snackbarHostState.showSnackbar("Removed from favorites")
@@ -150,17 +150,19 @@ private fun FavoriteSwipeToDeleteItem(
     val currentItem by rememberUpdatedState(article)
     var isRemoved by remember { mutableStateOf(false) }
 
+    // Once removed, drop the composable from the tree quickly
     if (isRemoved) return
 
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             when (value) {
-                SwipeToDismissBoxValue.StartToEnd,
+                // Only enable one direction: swipe from end to start (right-to-left)
                 SwipeToDismissBoxValue.EndToStart -> {
                     isRemoved = true
                     onDelete(currentItem)
                     true
                 }
+                SwipeToDismissBoxValue.StartToEnd,
                 SwipeToDismissBoxValue.Settled -> false
             }
         },
@@ -170,7 +172,7 @@ private fun FavoriteSwipeToDeleteItem(
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = { DismissBackground(dismissState) },
-        enableDismissFromStartToEnd = true,
+        enableDismissFromStartToEnd = false, // disable one side
         enableDismissFromEndToStart = true,
         modifier = Modifier
             .fillMaxWidth()
@@ -187,29 +189,27 @@ private fun FavoriteSwipeToDeleteItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DismissBackground(dismissState: SwipeToDismissBoxState) {
-    val color = when (dismissState.dismissDirection) {
-        SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.errorContainer
-        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.primaryContainer
-        SwipeToDismissBoxValue.Settled -> Color.Transparent
-    }
+    // Show red container and icon only on the delete side, and keep it
+    // visually "next to" the card by aligning to the swipe direction.
+    val isDeleteSide = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color)
+            .background(
+                if (isDeleteSide) MaterialTheme.colorScheme.errorContainer
+                else Color.Transparent
+            )
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.End
     ) {
-        Icon(
-            imageVector = Icons.Filled.Delete,
-            contentDescription = "Delete",
-            tint = MaterialTheme.colorScheme.onErrorContainer
-        )
-        Icon(
-            imageVector = Icons.Filled.Delete,
-            contentDescription = "Archive",
-            tint = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+        if (isDeleteSide) {
+            Icon(
+                imageVector = Icons.Filled.Delete,
+                contentDescription = "Delete",
+                tint = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
     }
 }
