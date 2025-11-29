@@ -5,25 +5,43 @@ package com.elgohary.newsapptask.presentation.favorites
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Scaffold
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.elgohary.newsapptask.core.ConnectivityObserver
 import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.presentation.common.ArticleCard
@@ -41,31 +59,47 @@ fun FavoritesScreen(
     val scope = rememberCoroutineScope()
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState)},
+        backgroundColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // subtle top padding so first card is fully visible under system bars
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // connectivity banner
             if (connectivityStatus != ConnectivityObserver.Status.Available) {
-                Surface(color = Color.Red.copy(alpha = 0.9f)) {
+                Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Text(
                         text = "No Internet Connection",
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
-                        color = Color.White
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp, horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
+                Spacer(modifier = Modifier.height(8.dp))
             }
+
             FavoritesContent(
                 favorites = favorites,
                 onArticleClick = onArticleClick,
                 onDelete = { article ->
                     viewModel.deleteArticle(article)
-                    scope.launch { snackbarHostState.showSnackbar(message = "Removed from favorites") }
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Removed from favorites")
+                    }
                 }
             )
         }
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FavoritesContent(
     favorites: List<Article>,
@@ -73,46 +107,80 @@ private fun FavoritesContent(
     onDelete: (Article) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        AnimatedVisibility(visible = favorites.isEmpty(), enter = fadeIn(), exit = fadeOut()) {
+        AnimatedVisibility(
+            visible = favorites.isEmpty(),
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
             EmptyScreen(message = "No favorites yet")
         }
-        AnimatedVisibility(visible = favorites.isNotEmpty(), enter = fadeIn(), exit = fadeOut()) {
-            LazyColumn(contentPadding = PaddingValues(bottom = 12.dp)) {
+
+        AnimatedVisibility(
+            visible = favorites.isNotEmpty(),
+            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 8 }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 8 })
+        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 items(
                     items = favorites,
                     key = { it.url ?: it.title ?: it.hashCode().toString() }
                 ) { article ->
-                    val isRenderable = !(article.title.isNullOrBlank() && article.description.isNullOrBlank() && article.urlToImage.isNullOrBlank())
-                    if (isRenderable) {
-                        val currentItem by rememberUpdatedState(article)
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { value ->
-                                when (value) {
-                                    SwipeToDismissBoxValue.StartToEnd, SwipeToDismissBoxValue.EndToStart -> {
-                                        onDelete(currentItem)
-                                        true
-                                    }
-                                    SwipeToDismissBoxValue.Settled -> false
-                                }
-                            },
-                            positionalThreshold = { it * 0.25f }
-                        )
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            backgroundContent = { DismissBackground(dismissState) },
-                            enableDismissFromStartToEnd = true,
-                            enableDismissFromEndToStart = true
-                        ) {
-                            ArticleCard(
-                                article = article,
-                                modifier = Modifier.fillMaxWidth(),
-                                onClick = { onArticleClick(article) }
-                            )
-                        }
-                    }
+                    FavoriteSwipeToDeleteItem(
+                        article = article,
+                        onClick = { onArticleClick(article) },
+                        onDelete = onDelete
+                    )
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FavoriteSwipeToDeleteItem(
+    article: Article,
+    onClick: () -> Unit,
+    onDelete: (Article) -> Unit
+) {
+    val currentItem by rememberUpdatedState(article)
+    var isRemoved by remember { mutableStateOf(false) }
+
+    if (isRemoved) return
+
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            when (value) {
+                SwipeToDismissBoxValue.StartToEnd,
+                SwipeToDismissBoxValue.EndToStart -> {
+                    isRemoved = true
+                    onDelete(currentItem)
+                    true
+                }
+                SwipeToDismissBoxValue.Settled -> false
+            }
+        },
+        positionalThreshold = { it * 0.25f }
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = { DismissBackground(dismissState) },
+        enableDismissFromStartToEnd = true,
+        enableDismissFromEndToStart = true,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CardDefaults.shape)
+    ) {
+        ArticleCard(
+            article = article,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onClick
+        )
     }
 }
 
@@ -124,16 +192,24 @@ private fun DismissBackground(dismissState: SwipeToDismissBoxState) {
         SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.primaryContainer
         SwipeToDismissBoxValue.Settled -> Color.Transparent
     }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(color)
-            .padding(12.dp, 8.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Icon(Icons.Filled.Delete, contentDescription = "delete")
-        Spacer(modifier = Modifier)
-        Icon(Icons.Filled.Delete, contentDescription = "archive")
+        Icon(
+            imageVector = Icons.Filled.Delete,
+            contentDescription = "Delete",
+            tint = MaterialTheme.colorScheme.onErrorContainer
+        )
+        Icon(
+            imageVector = Icons.Filled.Delete,
+            contentDescription = "Archive",
+            tint = MaterialTheme.colorScheme.onPrimaryContainer
+        )
     }
 }
