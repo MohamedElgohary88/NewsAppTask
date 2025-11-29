@@ -1,22 +1,25 @@
 package com.elgohary.newsapptask.presentation.navigation
 
 import android.net.Uri
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.*
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.presentation.details.DetailsScreen
 import com.elgohary.newsapptask.presentation.favorites.FavoritesScreen
 import com.elgohary.newsapptask.presentation.news_list.NewsListScreen
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 // Configure Json once
 private val articleJson = Json {
@@ -92,7 +95,7 @@ fun NewsNavHost(
                 }
                 val decoded = Uri.decode(encodedJson)
                 val article = try {
-                    articleJson.decodeFromString<com.elgohary.newsapptask.domain.model.Article>(decoded)
+                    articleJson.decodeFromString<Article>(decoded)
                 } catch (e: SerializationException) {
                     navController.popBackStack(); return@composable
                 }

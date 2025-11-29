@@ -1,8 +1,8 @@
 package com.elgohary.newsapptask.presentation.news_list
 
-/** Unified UI state for NewsList screen following MVVM & UDF. */
-data class NewsListState(
-    val isConnected: Boolean = true,
+/** Rich UI state for NewsList screen with gate logic fields. */
+data class NewsListUiState(
+    val isOffline: Boolean = false,
     val gateActive: Boolean = false,
     val errorMsg: String? = null
 )

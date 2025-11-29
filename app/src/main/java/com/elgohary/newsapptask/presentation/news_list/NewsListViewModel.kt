@@ -15,56 +15,65 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class NewsListUiState(
+    val isOffline: Boolean = false,
+    val gateActive: Boolean = false,
+    val errorMsg: String? = null
+)
+
+sealed interface NewsListEvent {
+    data class OnArticleClick(val article: Article) : NewsListEvent
+    object OnRetry : NewsListEvent
+}
+
 @HiltViewModel
 class NewsListViewModel @Inject constructor(
     getNewsUseCase: GetNewsUseCase,
-    connectivityObserver: ConnectivityObserver
+    private val connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
-    // Paging stream stays separate (collected as LazyPagingItems in UI) per instructions
-    val articles: Flow<PagingData<Article>> = getNewsUseCase().cachedIn(viewModelScope)
+    val articles: kotlinx.coroutines.flow.Flow<PagingData<Article>> =
+        getNewsUseCase().cachedIn(viewModelScope)
 
-    // Internal mutable state for gating logic
-    private val gateActive = MutableStateFlow(false)
-    private val pageBoundaryCount = MutableStateFlow(0)
+    private val _state = MutableStateFlow(NewsListUiState())
+    val state: StateFlow<NewsListUiState> = _state
+
     private var gateJob: Job? = null
 
-    // Exposed unified UI state
-    val uiState: StateFlow<NewsListState> = combine(
-        connectivityObserver.observe(),
-        gateActive,
-        _error
-    ) { connectivity, gate, error ->
-        NewsListState(
-            isConnected = connectivity == ConnectivityObserver.Status.Available,
-            gateActive = gate,
-            errorMsg = error
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NewsListState())
+    init {
+        observeConnectivity()
+    }
 
-    // Error placeholder (could be set when refresh loadState emits error via an external listener)
-    private val _error = MutableStateFlow<String?>(null)
+    private fun observeConnectivity() {
+        viewModelScope.launch {
+            connectivityObserver.observe().collectLatest { status ->
+                _state.update { it.copy(isOffline = status != ConnectivityObserver.Status.Available) }
+            }
+        }
+    }
 
-    /** Called by UI when current itemCount changes (pagingItems.itemCount) */
     fun onItemCountChanged(count: Int) {
         if (count <= 0) return
         val pageSize = Constants.DEFAULT_PAGE_SIZE
-        // Trigger gate only when crossing an exact multiple boundary not seen before
-        if (count % pageSize == 0 && count != pageBoundaryCount.value) {
-            pageBoundaryCount.value = count
-            startGate(count)
+        // We only need gateActive now; boundary is implicit.
+        if (count % pageSize == 0) {
+            startGate()
         }
     }
 
-    private fun startGate(latestCount: Int) {
+    private fun startGate() {
         gateJob?.cancel()
-        gateActive.value = true
         gateJob = viewModelScope.launch {
-            delay(3000) // matches UiDefaults.GATE_DELAY_MS without UI layer dependency
-            gateActive.value = false
+            _state.update { it.copy(gateActive = true) }
+            delay(3000)
+            _state.update { it.copy(gateActive = false) }
         }
     }
 
-    /** Optional: allow setting an error from outside (e.g., paging listener) */
-    fun setError(message: String?) { _error.value = message }
+    fun onEvent(event: NewsListEvent) {
+        when (event) {
+            is NewsListEvent.OnArticleClick -> { /* navigation handled by caller */ }
+            NewsListEvent.OnRetry -> _state.update { it.copy(errorMsg = null) }
+        }
+    }
 }

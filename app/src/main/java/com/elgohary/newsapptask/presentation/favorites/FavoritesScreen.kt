@@ -8,25 +8,37 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.elgohary.newsapptask.core.ConnectivityObserver
 import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.presentation.common.EmptyScreen
-import com.elgohary.newsapptask.presentation.designsystem.Strings.EmptyNews
+import com.elgohary.newsapptask.presentation.designsystem.Strings
 import com.elgohary.newsapptask.presentation.favorites.components.FavoriteSwipeToDeleteItem
-import kotlinx.coroutines.launch
+
+@Composable
+fun FavoritesRoute(
+    onArticleClick: (Article) -> Unit,
+    viewModel: FavoritesViewModel = hiltViewModel()
+) {
+    val state by viewModel.uiState.collectAsState()
+    FavoritesScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onArticleClick = onArticleClick
+    )
+}
 
 @Composable
 fun FavoritesScreen(
-    viewModel: FavoritesViewModel = hiltViewModel(),
+    state: FavoritesUiState,
+    onEvent: (FavoritesEvent) -> Unit,
     onArticleClick: (Article) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    val snackbarHostState = SnackbarHostState()
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -41,7 +53,7 @@ fun FavoritesScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             // connectivity banner
-            if (!uiState.isConnected) {
+            if (state.isOffline) {
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Text(
                         text = "No Internet Connection",
@@ -56,15 +68,9 @@ fun FavoritesScreen(
             }
 
             FavoritesContent(
-                favorites = uiState.favorites,
+                favorites = state.favorites,
                 onArticleClick = onArticleClick,
-                onDelete = { article ->
-                    // Persistently delete from local DB via ViewModel
-                    viewModel.deleteArticle(article)
-                    scope.launch {
-                        snackbarHostState.showSnackbar("Removed from favorites")
-                    }
-                }
+                onDelete = { article -> onEvent(FavoritesEvent.OnDeleteClick(article)) }
             )
         }
     }
@@ -82,7 +88,7 @@ private fun FavoritesContent(
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            EmptyScreen(title = EmptyNews, message = "No favorites yet")
+            EmptyScreen(title = Strings.EmptyNews, message = "No favorites yet")
         }
 
         AnimatedVisibility(
@@ -101,7 +107,10 @@ private fun FavoritesContent(
                 ) { _, article ->
                     FavoriteSwipeToDeleteItem(
                         article = article,
-                        onClick = { onArticleClick(article) },
+                        onClick = {
+                            onArticleClick(article)
+                            onEvent(FavoritesEvent.OnArticleClick(article))
+                        },
                         onDelete = onDelete
                     )
                 }

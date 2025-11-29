@@ -3,10 +3,14 @@ package com.elgohary.newsapptask.presentation.news_list
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.presentation.common.ArticleCard
@@ -17,27 +21,45 @@ import com.elgohary.newsapptask.presentation.designsystem.Strings
 import com.elgohary.newsapptask.presentation.news_list.components.*
 
 @Composable
-fun NewsListScreen(
+fun NewsListRoute(
     onArticleClick: (Article) -> Unit,
     viewModel: NewsListViewModel = hiltViewModel()
 ) {
+    val state by viewModel.state.collectAsState()
     val pagingItems = viewModel.articles.collectAsLazyPagingItems()
-    val uiState by viewModel.uiState.collectAsState()
 
-    // Notify VM of item count changes (no business logic here)
-    LaunchedEffect(pagingItems.itemCount) { viewModel.onItemCountChanged(pagingItems.itemCount) }
+    NewsListScreen(
+        state = state,
+        pagingItems = pagingItems,
+        onEvent = viewModel::onEvent,
+        onArticleClick = onArticleClick,
+        onItemCountChanged = viewModel::onItemCountChanged
+    )
+}
+
+@Composable
+fun NewsListScreen(
+    state: NewsListUiState,
+    pagingItems: LazyPagingItems<Article>,
+    onEvent: (NewsListEvent) -> Unit,
+    onArticleClick: (Article) -> Unit,
+    onItemCountChanged: (Int) -> Unit
+) {
+    LaunchedEffect(pagingItems.itemCount) {
+        onItemCountChanged(pagingItems.itemCount)
+    }
 
     Scaffold { inner ->
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
-            if (!uiState.isConnected) {
+            if (state.isOffline) {
                 OfflineBanner(onRetry = { pagingItems.refresh() })
             }
             Box(modifier = Modifier.fillMaxSize()) {
-                when (val state = pagingItems.loadState.refresh) {
+                when (val refreshState = pagingItems.loadState.refresh) {
                     is LoadState.Loading -> LoadingListPlaceholder()
                     is LoadState.Error -> ErrorScreen(
                         title = Strings.UnknownError,
-                        message = state.error.localizedMessage ?: Strings.UnknownError,
+                        message = refreshState.error.localizedMessage ?: Strings.UnknownError,
                         onRetry = { pagingItems.retry() }
                     )
                     is LoadState.NotLoading -> {
@@ -48,22 +70,25 @@ fun NewsListScreen(
                             LazyColumn(contentPadding = PaddingValues(bottom = Dimens.ListBottomPadding)) {
                                 items(count = totalCount) { index ->
                                     val article = pagingItems[index] ?: return@items
-                                    ArticleCard(article = article, onClick = { onArticleClick(article) })
+                                    ArticleCard(
+                                        article = article,
+                                        onClick = {
+                                            onArticleClick(article)
+                                            onEvent(NewsListEvent.OnArticleClick(article))
+                                        }
+                                    )
                                 }
-                                if (uiState.gateActive) {
+                                if (state.gateActive) {
                                     item { TimedFooter() }
                                 } else {
-                                    when (pagingItems.loadState.append) {
+                                    when (val appendState = pagingItems.loadState.append) {
                                         is LoadState.Loading -> item { AppendLoadingIndicator() }
-                                        is LoadState.Error -> {
-                                            val appendError = pagingItems.loadState.append as LoadState.Error
-                                            item {
-                                                ErrorScreen(
-                                                    title = Strings.LoadMoreFailed,
-                                                    message = appendError.error.localizedMessage ?: Strings.LoadMoreFailed,
-                                                    onRetry = { pagingItems.retry() }
-                                                )
-                                            }
+                                        is LoadState.Error -> item {
+                                            ErrorScreen(
+                                                title = Strings.LoadMoreFailed,
+                                                message = appendState.error.localizedMessage ?: Strings.LoadMoreFailed,
+                                                onRetry = { pagingItems.retry() }
+                                            )
                                         }
                                         else -> Unit
                                     }
