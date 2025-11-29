@@ -11,10 +11,10 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import com.elgohary.newsapptask.R
 import com.elgohary.newsapptask.domain.model.Article
-import com.elgohary.newsapptask.presentation.common.ArticleCard
-import com.elgohary.newsapptask.presentation.common.EmptyScreen
-import com.elgohary.newsapptask.presentation.common.ErrorScreen
 import com.elgohary.newsapptask.presentation.designsystem.Dimens
+import com.elgohary.newsapptask.presentation.designsystem.common.ArticleCard
+import com.elgohary.newsapptask.presentation.designsystem.common.EmptyScreen
+import com.elgohary.newsapptask.presentation.designsystem.common.ErrorScreen
 import com.elgohary.newsapptask.presentation.news_list.components.AppendLoadingIndicator
 import com.elgohary.newsapptask.presentation.news_list.components.LoadingListPlaceholder
 import com.elgohary.newsapptask.presentation.news_list.components.OfflineBanner

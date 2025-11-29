@@ -11,7 +11,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import com.elgohary.newsapptask.domain.model.Article
-import com.elgohary.newsapptask.presentation.common.ArticleCard
+import com.elgohary.newsapptask.presentation.designsystem.common.ArticleCard
 
 @Composable
 fun FavoriteSwipeToDeleteItem(

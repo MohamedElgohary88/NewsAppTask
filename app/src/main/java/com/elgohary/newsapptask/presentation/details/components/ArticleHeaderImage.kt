@@ -20,7 +20,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.elgohary.newsapptask.R
-import com.elgohary.newsapptask.presentation.common.ShimmerEffect
+import com.elgohary.newsapptask.presentation.designsystem.common.ShimmerEffect
 import com.elgohary.newsapptask.presentation.designsystem.Dimens
 
 @Composable

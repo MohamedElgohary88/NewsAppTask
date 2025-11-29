@@ -1,4 +1,4 @@
-package com.elgohary.newsapptask.presentation.common
+package com.elgohary.newsapptask.presentation.designsystem.common
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode

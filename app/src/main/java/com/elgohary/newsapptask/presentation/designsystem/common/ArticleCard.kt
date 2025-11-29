@@ -1,4 +1,4 @@
-package com.elgohary.newsapptask.presentation.common
+package com.elgohary.newsapptask.presentation.designsystem.common
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.background

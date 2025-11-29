@@ -3,7 +3,7 @@ package com.elgohary.newsapptask.presentation.news_list.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.elgohary.newsapptask.presentation.common.ShimmerEffect
+import com.elgohary.newsapptask.presentation.designsystem.common.ShimmerEffect
 import com.elgohary.newsapptask.presentation.designsystem.Dimens
 
 @Composable
