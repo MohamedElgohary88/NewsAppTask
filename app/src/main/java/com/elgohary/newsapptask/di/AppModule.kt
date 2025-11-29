@@ -30,7 +30,7 @@ object AppModule {
             val original = chain.request()
             val newRequest = original.newBuilder()
                 .header(Constants.HEADER_API_KEY, BuildConfig.NEWS_API_KEY)
-                .url(original.url) // use original URL directly; no redundant rebuild
+                .url(original.url)
                 .build()
             chain.proceed(newRequest)
         }

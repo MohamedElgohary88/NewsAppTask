@@ -6,6 +6,5 @@ object Constants {
     const val DEFAULT_COUNTRY = "us"
     const val DEFAULT_PAGE_SIZE = 20
     const val FIRST_PAGE_INDEX = 1
-
     const val HEADER_API_KEY = "X-Api-Key"
 }

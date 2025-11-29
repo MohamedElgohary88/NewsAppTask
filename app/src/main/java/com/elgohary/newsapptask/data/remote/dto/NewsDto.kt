@@ -18,4 +18,3 @@ data class NewsResponseDto(
     @SerializedName("totalResults") val totalResults: Int?,
     @SerializedName("articles") val articles: List<ArticleDto>?
 )
-
