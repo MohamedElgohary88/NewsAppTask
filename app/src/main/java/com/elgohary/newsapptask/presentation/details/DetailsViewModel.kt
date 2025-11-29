@@ -1,38 +1,48 @@
 package com.elgohary.newsapptask.presentation.details
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.elgohary.newsapptask.core.ConnectivityObserver
 import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.domain.usecase.SelectArticlesUseCase
 import com.elgohary.newsapptask.domain.usecase.UpsertArticleUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+data class DetailsState(
+    val isBookmarked: Boolean = false,
+    val isOffline: Boolean = false
+)
 
 @HiltViewModel
 class DetailsViewModel @Inject constructor(
     private val upsertArticleUseCase: UpsertArticleUseCase,
-    selectArticlesUseCase: SelectArticlesUseCase
+    selectArticlesUseCase: SelectArticlesUseCase,
+    connectivityObserver: ConnectivityObserver,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _savedUrls = MutableStateFlow<Set<String>>(emptySet())
-    val savedUrls: StateFlow<Set<String>> = _savedUrls.asStateFlow()
+    // Assume navigation passed "articleUrl"; fallback to empty
+    private val articleUrl: String = savedStateHandle.get<String>("articleUrl") ?: ""
 
-    init {
-        viewModelScope.launch {
-            selectArticlesUseCase().collectLatest { list ->
-                _savedUrls.value = list.mapNotNull { it.url }.toSet()
-            }
-        }
+    private val bookmarkedFlow = selectArticlesUseCase().map { list ->
+        articleUrl.isNotEmpty() && list.any { it.url == articleUrl }
     }
 
+    val uiState: StateFlow<DetailsState> = combine(
+        bookmarkedFlow,
+        connectivityObserver.observe()
+    ) { bookmarked, status ->
+        DetailsState(
+            isBookmarked = bookmarked,
+            isOffline = status != ConnectivityObserver.Status.Available
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DetailsState())
+
     fun saveArticle(article: Article) {
-        viewModelScope.launch {
-            upsertArticleUseCase(article)
-        }
+        viewModelScope.launch { upsertArticleUseCase(article) }
     }
 }

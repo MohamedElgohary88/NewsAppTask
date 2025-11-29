@@ -8,16 +8,12 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.elgohary.newsapptask.core.ConnectivityObserver
-import com.elgohary.newsapptask.core.Constants
 import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.presentation.common.ArticleCard
 import com.elgohary.newsapptask.presentation.common.EmptyScreen
 import com.elgohary.newsapptask.presentation.common.ErrorScreen
-import kotlinx.coroutines.delay
 import com.elgohary.newsapptask.presentation.designsystem.Dimens
 import com.elgohary.newsapptask.presentation.designsystem.Strings
-import com.elgohary.newsapptask.presentation.designsystem.UiDefaults
 import com.elgohary.newsapptask.presentation.news_list.components.*
 
 @Composable
@@ -26,27 +22,14 @@ fun NewsListScreen(
     viewModel: NewsListViewModel = hiltViewModel()
 ) {
     val pagingItems = viewModel.articles.collectAsLazyPagingItems()
-    val connectivityStatus by viewModel.connectivityStatus.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
-    val pageSize = Constants.DEFAULT_PAGE_SIZE
-
-    var uiState by remember { mutableStateOf(NewsListUiState()) }
-
-    LaunchedEffect(pagingItems.itemCount) {
-        val current = pagingItems.itemCount
-        if (current > 0 && current % pageSize == 0 && current != uiState.lastBoundaryCount) {
-            uiState = uiState.copy(gateActive = true, gateVisibleItemCount = uiState.lastBoundaryCount)
-            delay(UiDefaults.GATE_DELAY_MS)
-            uiState = uiState.copy(gateActive = false, lastBoundaryCount = current, gateVisibleItemCount = current)
-        } else if (uiState.lastBoundaryCount == 0 && current > 0) {
-            val baseline = current - (current % pageSize)
-            uiState = uiState.copy(lastBoundaryCount = baseline, gateVisibleItemCount = baseline)
-        }
-    }
+    // Notify VM of item count changes (no business logic here)
+    LaunchedEffect(pagingItems.itemCount) { viewModel.onItemCountChanged(pagingItems.itemCount) }
 
     Scaffold { inner ->
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
-            if (connectivityStatus != ConnectivityObserver.Status.Available) {
+            if (!uiState.isConnected) {
                 OfflineBanner(onRetry = { pagingItems.refresh() })
             }
             Box(modifier = Modifier.fillMaxSize()) {
@@ -59,31 +42,30 @@ fun NewsListScreen(
                     )
                     is LoadState.NotLoading -> {
                         val totalCount = pagingItems.itemCount
-                        val visibleCount = uiState.visibleCount(totalCount)
-                        if (visibleCount == 0) {
+                        if (totalCount == 0) {
                             EmptyScreen(title = Strings.EmptyNews, message = "")
                         } else {
                             LazyColumn(contentPadding = PaddingValues(bottom = Dimens.ListBottomPadding)) {
-                                items(count = visibleCount) { index ->
+                                items(count = totalCount) { index ->
                                     val article = pagingItems[index] ?: return@items
                                     ArticleCard(article = article, onClick = { onArticleClick(article) })
                                 }
-
                                 if (uiState.gateActive) {
                                     item { TimedFooter() }
                                 } else {
-                                    if (pagingItems.loadState.append is LoadState.Loading) {
-                                        item { AppendLoadingIndicator() }
-                                    }
-                                    if (pagingItems.loadState.append is LoadState.Error) {
-                                        val appendError = pagingItems.loadState.append as LoadState.Error
-                                        item {
-                                            ErrorScreen(
-                                                title = Strings.LoadMoreFailed,
-                                                message = appendError.error.localizedMessage ?: Strings.LoadMoreFailed,
-                                                onRetry = { pagingItems.retry() }
-                                            )
+                                    when (pagingItems.loadState.append) {
+                                        is LoadState.Loading -> item { AppendLoadingIndicator() }
+                                        is LoadState.Error -> {
+                                            val appendError = pagingItems.loadState.append as LoadState.Error
+                                            item {
+                                                ErrorScreen(
+                                                    title = Strings.LoadMoreFailed,
+                                                    message = appendError.error.localizedMessage ?: Strings.LoadMoreFailed,
+                                                    onRetry = { pagingItems.retry() }
+                                                )
+                                            }
                                         }
+                                        else -> Unit
                                     }
                                 }
                             }

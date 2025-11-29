@@ -7,13 +7,15 @@ import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.domain.usecase.DeleteArticleUseCase
 import com.elgohary.newsapptask.domain.usecase.SelectArticlesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+data class FavoritesState(
+    val favorites: List<Article> = emptyList(),
+    val isConnected: Boolean = true,
+    val isLoading: Boolean = false
+)
 
 @HiltViewModel
 class FavoritesViewModel @Inject constructor(
@@ -22,30 +24,21 @@ class FavoritesViewModel @Inject constructor(
     connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
-    private val _favorites = MutableStateFlow<List<Article>>(emptyList())
-    val favorites: StateFlow<List<Article>> = _favorites
+    private val isLoading = MutableStateFlow(false)
 
-    val connectivityStatus = connectivityObserver.observe().stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5_000),
-        ConnectivityObserver.Status.Unavailable
-    )
-
-    init {
-        observeFavorites()
-    }
-
-    private fun observeFavorites() {
-        viewModelScope.launch {
-            selectArticlesUseCase().collectLatest { articles ->
-                _favorites.value = articles
-            }
-        }
-    }
+    val uiState: StateFlow<FavoritesState> = combine(
+        selectArticlesUseCase(),
+        connectivityObserver.observe(),
+        isLoading
+    ) { favorites, connectivity, loading ->
+        FavoritesState(
+            favorites = favorites,
+            isConnected = connectivity == ConnectivityObserver.Status.Available,
+            isLoading = loading
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FavoritesState())
 
     fun deleteArticle(article: Article) {
-        viewModelScope.launch {
-            deleteArticleUseCase(article)
-        }
+        viewModelScope.launch { deleteArticleUseCase(article) }
     }
 }

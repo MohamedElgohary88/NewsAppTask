@@ -29,18 +29,15 @@ fun DetailsScreen(
     navController: NavHostController? = null,
     viewModel: DetailsViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val savedUrls by viewModel.savedUrls.collectAsState()
-    val alreadySaved = article.url?.let { savedUrls.contains(it) } == true
     val expandedState = rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
-        topBar = {
-            DetailsTopBar(onBack = { navController?.popBackStack() })
-        },
+        topBar = { DetailsTopBar(onBack = { navController?.popBackStack() }) },
         floatingActionButton = {
             AnimatedVisibility(
-                visible = !alreadySaved,
+                visible = !uiState.isBookmarked,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {

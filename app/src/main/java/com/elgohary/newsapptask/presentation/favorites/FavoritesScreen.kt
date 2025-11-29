@@ -24,8 +24,7 @@ fun FavoritesScreen(
     viewModel: FavoritesViewModel = hiltViewModel(),
     onArticleClick: (Article) -> Unit
 ) {
-    val favorites by viewModel.favorites.collectAsState()
-    val connectivityStatus by viewModel.connectivityStatus.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -42,7 +41,7 @@ fun FavoritesScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             // connectivity banner
-            if (connectivityStatus != ConnectivityObserver.Status.Available) {
+            if (!uiState.isConnected) {
                 Surface(color = MaterialTheme.colorScheme.errorContainer) {
                     Text(
                         text = "No Internet Connection",
@@ -57,7 +56,7 @@ fun FavoritesScreen(
             }
 
             FavoritesContent(
-                favorites = favorites,
+                favorites = uiState.favorites,
                 onArticleClick = onArticleClick,
                 onDelete = { article ->
                     // Persistently delete from local DB via ViewModel
