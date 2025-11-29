@@ -13,60 +13,41 @@ import javax.inject.Inject
 
 @HiltViewModel
 class FavoritesViewModel @Inject constructor(
-    private val selectArticlesUseCase: SelectArticlesUseCase,
+    selectArticlesUseCase: SelectArticlesUseCase,
     private val deleteArticleUseCase: DeleteArticleUseCase,
     connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
-    private val _favoritesFlow = MutableStateFlow<List<Article>>(emptyList())
-    private val _isLoading = MutableStateFlow(true)
-    private val _error = MutableStateFlow<String?>(null)
+    private val favoritesFlow: Flow<List<Article>> = selectArticlesUseCase()
 
-    val uiState: StateFlow<FavoritesUiState> = combine(
-        _favoritesFlow,
-        _isLoading,
-        _error,
-        connectivityObserver.observe()
-    ) { favorites, loading, error, connectivity ->
-        FavoritesUiState(
-            favorites = favorites,
-            isLoading = loading,
-            isEmpty = favorites.isEmpty() && !loading,
-            errorMessage = error,
-            isOffline = connectivity != ConnectivityObserver.Status.Available
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FavoritesUiState())
+    private val _events = MutableSharedFlow<FavoritesEvent>()
+    val events = _events.asSharedFlow()
 
-    init {
-        observeFavorites()
-    }
-
-    private fun observeFavorites() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                selectArticlesUseCase().collectLatest { list ->
-                    _favoritesFlow.value = list
-                    _isLoading.value = false
-                }
-            } catch (e: Exception) {
-                _error.value = e.localizedMessage
-                _isLoading.value = false
-            }
+    val state: StateFlow<FavoritesUiState> = favoritesFlow
+        .map { list ->
+            FavoritesUiState(
+                favorites = list,
+                isLoading = false,
+                isEmpty = list.isEmpty(),
+                errorMessage = null
+            )
         }
-    }
+        .onStart { emit(FavoritesUiState(isLoading = true)) }
+        .combine(connectivityObserver.observe()) { ui, connectivity ->
+            ui.copy(isOffline = connectivity != ConnectivityObserver.Status.Available)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FavoritesUiState())
 
     fun onEvent(event: FavoritesEvent) {
         when (event) {
             is FavoritesEvent.OnDeleteClick -> deleteArticle(event.article)
-            is FavoritesEvent.OnArticleClick -> { /* Navigation handled by Route */ }
-            FavoritesEvent.OnRetry -> { observeFavorites() }
+            is FavoritesEvent.OnArticleClick -> viewModelScope.launch { _events.emit(FavoritesEvent.NavigateToArticle(event.article)) }
+            FavoritesEvent.OnRetry -> viewModelScope.launch { _events.emit(FavoritesEvent.RetryRequested) }
+            else -> Unit
         }
     }
 
     private fun deleteArticle(article: Article) {
-        viewModelScope.launch {
-            deleteArticleUseCase(article)
-        }
+        viewModelScope.launch { deleteArticleUseCase(article) }
     }
 }

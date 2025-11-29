@@ -11,9 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.elgohary.newsapptask.R
 import com.elgohary.newsapptask.presentation.designsystem.AppColors
 import com.elgohary.newsapptask.presentation.designsystem.Dimens
-import com.elgohary.newsapptask.presentation.designsystem.Strings
 
 @Composable
 fun OfflineBanner(onRetry: () -> Unit) {
@@ -23,9 +24,9 @@ fun OfflineBanner(onRetry: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = Strings.NoInternetTitle, color = Color.White)
+            Text(text = stringResource(R.string.no_internet_title), color = Color.White)
             Text(
-                text = Strings.Retry,
+                text = stringResource(R.string.retry),
                 color = Color.White,
                 modifier = Modifier.clickable { onRetry() }
             )

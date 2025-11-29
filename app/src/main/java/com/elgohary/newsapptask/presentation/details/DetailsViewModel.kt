@@ -7,10 +7,16 @@ import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.domain.usecase.SelectArticlesUseCase
 import com.elgohary.newsapptask.domain.usecase.UpsertArticleUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+sealed class DetailsUiEvent {
+
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DetailsViewModel @Inject constructor(
     private val upsertArticleUseCase: UpsertArticleUseCase,
@@ -18,45 +24,51 @@ class DetailsViewModel @Inject constructor(
     connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(DetailsUiState())
+    private val currentArticleUrl = MutableStateFlow<String?>(null)
+    private val _isDescriptionExpanded = MutableStateFlow(false)
+    private val _events = MutableSharedFlow<DetailsUiEvent>()
+    val events = _events.asSharedFlow()
+
+    private val isBookmarkedFlow: Flow<Boolean> = currentArticleUrl
+        .filterNotNull()
+        .flatMapLatest { url ->
+            selectArticlesUseCase().map { saved -> saved.any { it.url == url } }
+        }
 
     val state: StateFlow<DetailsUiState> = combine(
-        _state,
+        isBookmarkedFlow.onStart { emit(false) },
+        _isDescriptionExpanded,
         connectivityObserver.observe()
-    ) { currentState, connectivityStatus ->
-        currentState.copy(
-            isOffline = connectivityStatus != ConnectivityObserver.Status.Available
+    ) { isBookmarked, descExpanded, connectivity ->
+        DetailsUiState(
+            isBookmarked = isBookmarked,
+            isOffline = connectivity != ConnectivityObserver.Status.Available,
+            isDescriptionExpanded = descExpanded
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DetailsUiState())
 
-    fun checkBookmarkStatus(articleUrl: String?) {
-        if (articleUrl.isNullOrEmpty()) return
-
-        viewModelScope.launch {
-            selectArticlesUseCase().collect { savedArticles ->
-                val isSaved = savedArticles.any { it.url == articleUrl }
-                _state.update { it.copy(isBookmarked = isSaved) }
-            }
-        }
+    fun startObservingArticle(url: String?) {
+        currentArticleUrl.value = url
     }
 
     fun onEvent(event: DetailsEvent) {
         when (event) {
             is DetailsEvent.ToggleBookmark -> toggleBookmark(event.article)
             DetailsEvent.ToggleDescription -> toggleDescription()
-            DetailsEvent.OnBackClicked -> { /* Handled by UI callback */ }
+            DetailsEvent.OnBackClicked -> viewModelScope.launch {  }
+            else -> {
+
+            }
         }
     }
 
     private fun toggleDescription() {
-        _state.update { it.copy(isDescriptionExpanded = !it.isDescriptionExpanded) }
+        _isDescriptionExpanded.update { !it }
     }
 
     private fun toggleBookmark(article: Article) {
         viewModelScope.launch {
-            if (!_state.value.isBookmarked) {
-                upsertArticleUseCase(article)
-            }
+            if (!state.value.isBookmarked) upsertArticleUseCase(article)
         }
     }
 }

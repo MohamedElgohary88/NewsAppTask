@@ -12,10 +12,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import com.elgohary.newsapptask.R
+import com.elgohary.newsapptask.presentation.designsystem.Dimens
 
 @Composable
 fun ArticleDescription(
@@ -45,13 +47,13 @@ fun ArticleDescription(
     AnimatedVisibility(visible = isExpanded) {
         Column {
             if (contentSafe.isNotBlank()) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingMD))
                 Text(
                     text = contentSafe,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingLG))
             if (!articleUrl.isNullOrBlank()) {
                 OpenInBrowserLink(onOpen = {
                     val customTabsIntent = CustomTabsIntent.Builder().build()
@@ -64,25 +66,27 @@ fun ArticleDescription(
 
 @Composable
 private fun ReadMoreLink(onClick: () -> Unit) {
+    val readMoreLabel = stringResource(R.string.read_more)
     Text(
-        text = "Read more",
+        text = readMoreLabel,
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier
-            .padding(top = 8.dp)
+            .padding(top = Dimens.SpacingSM)
             .clickable(onClick = onClick)
-            .semantics { contentDescription = "Read more" }
+            .semantics { contentDescription = readMoreLabel }
     )
 }
 
 @Composable
 private fun OpenInBrowserLink(onOpen: () -> Unit) {
+    val openLabel = stringResource(R.string.open_in_browser)
     Text(
-        text = "Open in browser",
+        text = openLabel,
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier
             .clickable(onClick = onOpen)
-            .semantics { contentDescription = "Open article in browser" }
+            .semantics { contentDescription = openLabel }
     )
 }

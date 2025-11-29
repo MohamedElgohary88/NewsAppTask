@@ -6,14 +6,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
+import com.elgohary.newsapptask.R
 import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.presentation.common.ArticleCard
 import com.elgohary.newsapptask.presentation.common.EmptyScreen
 import com.elgohary.newsapptask.presentation.common.ErrorScreen
 import com.elgohary.newsapptask.presentation.designsystem.Dimens
-import com.elgohary.newsapptask.presentation.designsystem.Strings
 import com.elgohary.newsapptask.presentation.news_list.components.AppendLoadingIndicator
 import com.elgohary.newsapptask.presentation.news_list.components.LoadingListPlaceholder
 import com.elgohary.newsapptask.presentation.news_list.components.OfflineBanner
@@ -30,11 +31,11 @@ fun NewsListScreen(
         onEvent(NewsListEvent.OnItemCountChanged(pagingItems.itemCount))
     }
 
-    Scaffold { inner ->
+    Scaffold { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(inner)
+                .padding(innerPadding)
         ) {
             if (state.isOffline) {
                 OfflineBanner(onRetry = { pagingItems.refresh() })
@@ -45,14 +46,14 @@ fun NewsListScreen(
                     is LoadState.Loading -> LoadingListPlaceholder()
 
                     is LoadState.Error -> ErrorScreen(
-                        title = Strings.UnknownError,
-                        message = refreshState.error.localizedMessage ?: Strings.UnknownError,
-                        onRetry = { pagingItems.retry() }
+                        title = stringResource(R.string.unknown_error),
+                        message = refreshState.error.localizedMessage ?: stringResource(R.string.unknown_error),
+                        onRetry = { pagingItems.retry(); onEvent(NewsListEvent.OnRetry) }
                     )
 
                     is LoadState.NotLoading -> {
                         if (pagingItems.itemCount == 0) {
-                            EmptyScreen(title = Strings.EmptyNews, message = "")
+                            EmptyScreen(title = stringResource(R.string.empty_news), message = "")
                         } else {
                             LazyColumn(
                                 contentPadding = PaddingValues(bottom = Dimens.ListBottomPadding)
@@ -64,7 +65,6 @@ fun NewsListScreen(
                                             article = article,
                                             onClick = {
                                                 onArticleClick(article)
-                                                onEvent(NewsListEvent.OnArticleClick(article))
                                             }
                                         )
                                     }
@@ -77,9 +77,9 @@ fun NewsListScreen(
                                         is LoadState.Loading -> item { AppendLoadingIndicator() }
                                         is LoadState.Error -> item {
                                             ErrorScreen(
-                                                title = Strings.LoadMoreFailed,
-                                                message = appendState.error.localizedMessage ?: Strings.LoadMoreFailed,
-                                                onRetry = { pagingItems.retry() }
+                                                title = stringResource(R.string.load_more_failed),
+                                                message = appendState.error.localizedMessage ?: stringResource(R.string.load_more_failed),
+                                                onRetry = { pagingItems.retry(); onEvent(NewsListEvent.OnRetry) }
                                             )
                                         }
                                         else -> Unit

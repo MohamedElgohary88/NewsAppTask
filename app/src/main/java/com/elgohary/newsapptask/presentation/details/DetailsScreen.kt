@@ -10,8 +10,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.elgohary.newsapptask.domain.model.Article
+import com.elgohary.newsapptask.presentation.designsystem.Dimens
 import com.elgohary.newsapptask.presentation.details.components.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,14 +49,14 @@ fun DetailsScreen(
                 title = article.title
             )
 
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(Dimens.SpacingLG)) {
                 ArticleTitleAndMeta(
                     title = article.title.orEmpty(),
                     publishedAt = article.publishedAt.orEmpty(),
                     sourceName = article.source?.name
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Dimens.SpacingLG))
 
                 ArticleDescription(
                     description = article.description,

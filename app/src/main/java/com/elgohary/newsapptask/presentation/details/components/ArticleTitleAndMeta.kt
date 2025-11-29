@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import com.elgohary.newsapptask.presentation.designsystem.Dimens
 
 @Composable
 fun ArticleTitleAndMeta(title: String, publishedAt: String, sourceName: String?) {
@@ -20,7 +20,7 @@ fun ArticleTitleAndMeta(title: String, publishedAt: String, sourceName: String?)
         maxLines = 4,
         overflow = TextOverflow.Ellipsis
     )
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(Dimens.SpacingMD))
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (!sourceName.isNullOrBlank()) {
             Text(
@@ -28,7 +28,7 @@ fun ArticleTitleAndMeta(title: String, publishedAt: String, sourceName: String?)
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(Dimens.SpacingLG))
         }
         Text(
             text = publishedAt,

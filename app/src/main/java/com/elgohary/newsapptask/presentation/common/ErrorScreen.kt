@@ -10,8 +10,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.elgohary.newsapptask.R
 import com.elgohary.newsapptask.presentation.designsystem.Dimens
-import com.elgohary.newsapptask.presentation.designsystem.Strings
 
 @Composable
 fun ErrorScreen(
@@ -36,7 +37,7 @@ fun ErrorScreen(
         )
         if (onRetry != null) {
             Button(onClick = onRetry, modifier = Modifier.padding(top = Dimens.SpacingLG)) {
-                Text(text = Strings.Retry)
+                Text(text = stringResource(R.string.retry))
             }
         }
     }

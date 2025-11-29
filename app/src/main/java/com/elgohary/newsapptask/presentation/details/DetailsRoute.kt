@@ -6,7 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.elgohary.newsapptask.domain.model.Article
 
 @Composable
@@ -18,21 +18,25 @@ fun DetailsRoute(
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 
-    // Check bookmark status as soon as we have the article URL
     LaunchedEffect(article.url) {
-        viewModel.checkBookmarkStatus(article.url)
+        viewModel.startObservingArticle(article.url)
     }
 
     DetailsScreen(
         state = state,
         article = article,
         onEvent = { event ->
-            when(event) {
+            when (event) {
                 is DetailsEvent.OnBackClicked -> onBackClick()
                 is DetailsEvent.ToggleBookmark -> {
                     viewModel.onEvent(event)
                     Toast.makeText(context, "Saved to favorites", Toast.LENGTH_SHORT).show()
                 }
+                is DetailsEvent.ShowMessage -> {
+                    viewModel.onEvent(event)
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+
                 else -> viewModel.onEvent(event)
             }
         }

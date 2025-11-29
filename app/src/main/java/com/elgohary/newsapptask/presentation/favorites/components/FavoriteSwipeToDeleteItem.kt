@@ -5,7 +5,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import com.elgohary.newsapptask.domain.model.Article
@@ -18,8 +20,6 @@ fun FavoriteSwipeToDeleteItem(
     onDelete: (Article) -> Unit
 ) {
     val currentItem by rememberUpdatedState(article)
-    var isRemoved by remember { mutableStateOf(false) }
-    if (isRemoved) return
 
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
