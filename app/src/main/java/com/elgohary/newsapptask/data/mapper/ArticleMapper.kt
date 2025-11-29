@@ -14,4 +14,3 @@ fun ArticleDto.toDomain(): Article = Article(
     publishedAt = this.publishedAt,
     content = this.content
 )
-

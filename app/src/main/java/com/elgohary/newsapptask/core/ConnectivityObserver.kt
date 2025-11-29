@@ -5,6 +5,8 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -21,8 +23,8 @@ interface ConnectivityObserver {
     fun observe(): Flow<Status>
 }
 
-class NetworkConnectivityObserver(
-    private val context: Context
+class NetworkConnectivityObserver @Inject constructor(
+    @ApplicationContext private val context: Context
 ) : ConnectivityObserver {
 
     override fun observe(): Flow<ConnectivityObserver.Status> = callbackFlow {
@@ -64,4 +66,3 @@ class NetworkConnectivityObserver(
         }
     }.distinctUntilChanged()
 }
-
