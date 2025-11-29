@@ -10,6 +10,7 @@ This README documents the project structure, setup, build & run instructions, ar
 
 - About
 - Features
+- Demo Video
 - Architecture & Patterns
 - Project structure
 - Requirements
@@ -48,6 +49,10 @@ This project has been refactored to centralize UI state into single `UiState` cl
 - Share / open article in browser
 - Swipe to delete in favorites
 - Theming using Material 3 and a small design system (colors, dimens, type)
+
+##  Demo Video
+
+https://github.com/user-attachments/assets/8328b19e-3cf5-4929-b38e-45000512bf53
 
 ## Architecture & Patterns
 
