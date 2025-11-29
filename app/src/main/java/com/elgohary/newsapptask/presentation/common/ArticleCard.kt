@@ -3,18 +3,9 @@ package com.elgohary.newsapptask.presentation.common
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -23,11 +14,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.elgohary.newsapptask.domain.model.Article
+import com.elgohary.newsapptask.presentation.designsystem.Dimens
+import com.elgohary.newsapptask.presentation.designsystem.Strings
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -39,23 +31,23 @@ fun ArticleCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = Dimens.SpacingMD, vertical = Dimens.SpacingSM)
             .clickable(role = Role.Button, onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(Dimens.CornerLG),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = Dimens.SpacingSM)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(Dimens.SpacingMD)) {
             val painter = rememberAsyncImagePainter(model = article.urlToImage)
             val painterState = painter.state
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .height(Dimens.CardImageHeight)
+                    .clip(RoundedCornerShape(Dimens.CornerMD))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
@@ -71,7 +63,7 @@ fun ArticleCard(
                     else -> {
                         AsyncImage(
                             model = article.urlToImage,
-                            contentDescription = article.title ?: "Article image",
+                            contentDescription = article.title ?: Strings.NoImage,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
@@ -79,7 +71,7 @@ fun ArticleCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingSM))
 
             Text(
                 text = article.title.orEmpty(),
@@ -88,7 +80,7 @@ fun ArticleCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(Dimens.SpacingXS))
 
             Text(
                 text = article.description.orEmpty(),
@@ -109,7 +101,7 @@ private fun ImagePlaceholder() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "No image",
+            text = Strings.NoImage,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

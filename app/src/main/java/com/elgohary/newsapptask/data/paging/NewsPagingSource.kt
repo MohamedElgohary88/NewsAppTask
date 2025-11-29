@@ -30,18 +30,19 @@ class NewsPagingSource(
                 page = page,
                 pageSize = pageSize
             )
-            if (!response.isSuccessful) {
-                return LoadResult.Error(HttpException(response))
-            }
-            val body = response.body()
-            val dtos = body?.articles.orEmpty()
-            val mapped = dtos
+
+            if (!response.isSuccessful) return LoadResult.Error(HttpException(response))
+
+            val dtos = response.body()?.articles.orEmpty()
+            val data = dtos
                 .map { it.toDomain() }
                 .filter { it.title != "[Removed]" }
-            val nextKey = if (mapped.isEmpty()) null else page + 1
+
+            val nextKey = if (data.isEmpty()) null else page + 1
             val prevKey = if (page == Constants.FIRST_PAGE_INDEX) null else page - 1
+
             LoadResult.Page(
-                data = mapped,
+                data = data,
                 prevKey = prevKey,
                 nextKey = nextKey
             )

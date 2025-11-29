@@ -15,9 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.material3.MaterialTheme
+import com.elgohary.newsapptask.presentation.designsystem.AppColors
+import com.elgohary.newsapptask.presentation.designsystem.UiDefaults
 
 @Composable
 fun ShimmerEffect(
@@ -28,14 +29,14 @@ fun ShimmerEffect(
         initialValue = -1f,
         targetValue = 2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = UiDefaults.SHIMMER_DURATION_MS, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "shimmerX"
     )
 
     val baseColor = MaterialTheme.colorScheme.surfaceVariant
-    val highlight = Color.White.copy(alpha = 0.35f)
+    val highlight = AppColors.ShimmerHighlight
     val brush = Brush.linearGradient(
         colors = listOf(baseColor, highlight, baseColor),
         start = Offset.Zero,

@@ -4,6 +4,11 @@ import androidx.paging.PagingData
 import kotlinx.coroutines.flow.Flow
 import com.elgohary.newsapptask.domain.model.Article
 
+/**
+ * Repository abstraction for news domain.
+ * - getTopHeadlines: stream paged remote data
+ * - bookmarks: local persistence operations
+ */
 interface NewsRepository {
     fun getTopHeadlines(
         country: String,

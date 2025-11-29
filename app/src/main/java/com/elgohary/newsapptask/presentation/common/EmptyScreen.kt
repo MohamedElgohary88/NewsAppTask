@@ -10,20 +10,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.elgohary.newsapptask.presentation.designsystem.Dimens
 
 @Composable
 fun EmptyScreen(
     modifier: Modifier = Modifier,
-    title: String = "No results",
-    message: String = "Try adjusting your filters or search.",
+    title: String,
+    message: String,
     actionText: String? = null,
     onActionClick: (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(Dimens.SpacingXL),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -32,11 +32,11 @@ fun EmptyScreen(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = Dimens.SpacingSM)
         )
 
         if (actionText != null && onActionClick != null) {
-            Button(onClick = onActionClick, modifier = Modifier.padding(top = 16.dp)) {
+            Button(onClick = onActionClick, modifier = Modifier.padding(top = Dimens.SpacingLG)) {
                 Text(text = actionText)
             }
         }

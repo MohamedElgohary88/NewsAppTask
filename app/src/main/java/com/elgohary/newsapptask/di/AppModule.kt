@@ -1,3 +1,5 @@
+@file:Suppress("unused", "DEPRECATION")
+
 package com.elgohary.newsapptask.di
 
 import android.content.Context
@@ -25,23 +27,29 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
-        val apiKeyInterceptor = Interceptor { chain ->
-            val original = chain.request()
-            val newRequest = original.newBuilder()
-                .header(Constants.HEADER_API_KEY, BuildConfig.NEWS_API_KEY)
-                .url(original.url)
-                .build()
-            chain.proceed(newRequest)
-        }
-
-        val logging = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }
-
-        return OkHttpClient.Builder()
-            .addInterceptor(apiKeyInterceptor)
-            .addInterceptor(logging)
+    fun provideApiKeyInterceptor(): Interceptor = Interceptor { chain ->
+        val original = chain.request()
+        val newRequest = original.newBuilder()
+            .header(Constants.HEADER_API_KEY, BuildConfig.NEWS_API_KEY)
             .build()
+        chain.proceed(newRequest)
     }
+
+    @Provides
+    @Singleton
+    fun provideLoggingInterceptor(): HttpLoggingInterceptor = HttpLoggingInterceptor().apply {
+        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        apiKeyInterceptor: Interceptor,
+        loggingInterceptor: HttpLoggingInterceptor
+    ): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(apiKeyInterceptor)
+        .addInterceptor(loggingInterceptor)
+        .build()
 
     @Provides
     @Singleton
@@ -59,7 +67,7 @@ object AppModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): NewsDatabase =
         Room.databaseBuilder(context, NewsDatabase::class.java, Constants.DATABASE_NAME)
-            .fallbackToDestructiveMigration() // allow schema changes (e.g., adding unique index) without crashes in dev
+            .fallbackToDestructiveMigration()
             .build()
 
     @Provides

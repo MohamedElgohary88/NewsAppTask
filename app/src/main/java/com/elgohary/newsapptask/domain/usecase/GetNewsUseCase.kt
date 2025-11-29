@@ -13,7 +13,5 @@ class GetNewsUseCase @Inject constructor(
     operator fun invoke(
         country: String = Constants.DEFAULT_COUNTRY,
         pageSize: Int = Constants.DEFAULT_PAGE_SIZE
-    ): Flow<PagingData<Article>> {
-        return repository.getTopHeadlines(country = country, pageSize = pageSize)
-    }
+    ): Flow<PagingData<Article>> = repository.getTopHeadlines(country = country, pageSize = pageSize)
 }

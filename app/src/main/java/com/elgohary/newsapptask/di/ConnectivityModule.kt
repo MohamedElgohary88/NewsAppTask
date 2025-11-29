@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package com.elgohary.newsapptask.di
 
 import com.elgohary.newsapptask.core.ConnectivityObserver
@@ -8,6 +10,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/** Binds ConnectivityObserver to its Network implementation. */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class ConnectivityModule {
@@ -15,4 +18,3 @@ abstract class ConnectivityModule {
     @Singleton
     abstract fun bindConnectivityObserver(impl: NetworkConnectivityObserver): ConnectivityObserver
 }
-

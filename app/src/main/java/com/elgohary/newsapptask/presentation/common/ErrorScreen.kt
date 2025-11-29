@@ -10,19 +10,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.elgohary.newsapptask.presentation.designsystem.Dimens
+import com.elgohary.newsapptask.presentation.designsystem.Strings
 
 @Composable
 fun ErrorScreen(
     modifier: Modifier = Modifier,
-    title: String = "Something went wrong",
-    message: String = "Please try again.",
+    title: String,
+    message: String,
     onRetry: (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(Dimens.SpacingXL),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -31,11 +32,11 @@ fun ErrorScreen(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = Dimens.SpacingSM)
         )
         if (onRetry != null) {
-            Button(onClick = onRetry, modifier = Modifier.padding(top = 16.dp)) {
-                Text(text = "Retry")
+            Button(onClick = onRetry, modifier = Modifier.padding(top = Dimens.SpacingLG)) {
+                Text(text = Strings.Retry)
             }
         }
     }

@@ -1,25 +1,24 @@
 package com.elgohary.newsapptask.presentation.news_list
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.elgohary.newsapptask.core.ConnectivityObserver
+import com.elgohary.newsapptask.core.Constants
 import com.elgohary.newsapptask.domain.model.Article
 import com.elgohary.newsapptask.presentation.common.ArticleCard
 import com.elgohary.newsapptask.presentation.common.EmptyScreen
 import com.elgohary.newsapptask.presentation.common.ErrorScreen
-import com.elgohary.newsapptask.presentation.common.ShimmerEffect
 import kotlinx.coroutines.delay
+import com.elgohary.newsapptask.presentation.designsystem.Dimens
+import com.elgohary.newsapptask.presentation.designsystem.Strings
+import com.elgohary.newsapptask.presentation.designsystem.UiDefaults
+import com.elgohary.newsapptask.presentation.news_list.components.*
 
 @Composable
 fun NewsListScreen(
@@ -29,107 +28,59 @@ fun NewsListScreen(
     val pagingItems = viewModel.articles.collectAsLazyPagingItems()
     val connectivityStatus by viewModel.connectivityStatus.collectAsState()
 
-    // Gate state: show a 3s footer after every multiple-of-pageSize boundary crossed
-    val pageSize = 20 // fallback if server uses 20 per page
-    var lastBoundaryCount by remember { mutableIntStateOf(0) }
-    var gateActive by remember { mutableStateOf(false) }
-    var gateVisibleItemCount by remember { mutableIntStateOf(0) }
+    val pageSize = Constants.DEFAULT_PAGE_SIZE
+
+    var uiState by remember { mutableStateOf(NewsListUiState()) }
 
     LaunchedEffect(pagingItems.itemCount) {
         val current = pagingItems.itemCount
-        if (current > 0 && current % pageSize == 0 && current != lastBoundaryCount) {
-            gateActive = true
-            gateVisibleItemCount = lastBoundaryCount
-            delay(3000L)
-            gateActive = false
-            // Update boundary so future multiples trigger again
-            lastBoundaryCount = current
-            gateVisibleItemCount = current
-        } else if (lastBoundaryCount == 0 && current > 0) {
-            lastBoundaryCount = current - (current % pageSize)
-            gateVisibleItemCount = lastBoundaryCount
+        if (current > 0 && current % pageSize == 0 && current != uiState.lastBoundaryCount) {
+            uiState = uiState.copy(gateActive = true, gateVisibleItemCount = uiState.lastBoundaryCount)
+            delay(UiDefaults.GATE_DELAY_MS)
+            uiState = uiState.copy(gateActive = false, lastBoundaryCount = current, gateVisibleItemCount = current)
+        } else if (uiState.lastBoundaryCount == 0 && current > 0) {
+            val baseline = current - (current % pageSize)
+            uiState = uiState.copy(lastBoundaryCount = baseline, gateVisibleItemCount = baseline)
         }
     }
 
     Scaffold { inner ->
         Column(modifier = Modifier.fillMaxSize().padding(inner)) {
             if (connectivityStatus != ConnectivityObserver.Status.Available) {
-                Surface(color = Color.Red.copy(alpha = 0.9f)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "No Internet Connection", color = Color.White)
-                        Text(
-                            text = "Retry",
-                            color = Color.White,
-                            modifier = Modifier.clickable { pagingItems.refresh() }
-                        )
-                    }
-                }
+                OfflineBanner(onRetry = { pagingItems.refresh() })
             }
             Box(modifier = Modifier.fillMaxSize()) {
                 when (val state = pagingItems.loadState.refresh) {
-                    is LoadState.Loading -> {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            repeat(6) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(180.dp)
-                                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                                ) { ShimmerEffect(modifier = Modifier.fillMaxSize()) }
-                            }
-                        }
-                    }
-                    is LoadState.Error -> {
-                        ErrorScreen(
-                            message = state.error.localizedMessage ?: "Unknown error",
-                            onRetry = { pagingItems.retry() }
-                        )
-                    }
+                    is LoadState.Loading -> LoadingListPlaceholder()
+                    is LoadState.Error -> ErrorScreen(
+                        title = Strings.UnknownError,
+                        message = state.error.localizedMessage ?: Strings.UnknownError,
+                        onRetry = { pagingItems.retry() }
+                    )
                     is LoadState.NotLoading -> {
                         val totalCount = pagingItems.itemCount
-                        // If gate active, restrict visible items to gateVisibleItemCount; else show all
-                        val visibleCount = if (gateActive) gateVisibleItemCount else totalCount
+                        val visibleCount = uiState.visibleCount(totalCount)
                         if (visibleCount == 0) {
-                            EmptyScreen(message = "No news available")
+                            EmptyScreen(title = Strings.EmptyNews, message = "")
                         } else {
-                            LazyColumn(contentPadding = PaddingValues(bottom = 12.dp)) {
-                                // Use paging compose items extension for cleaner null handling
+                            LazyColumn(contentPadding = PaddingValues(bottom = Dimens.ListBottomPadding)) {
                                 items(count = visibleCount) { index ->
                                     val article = pagingItems[index] ?: return@items
                                     ArticleCard(article = article, onClick = { onArticleClick(article) })
                                 }
 
-                                // Footer while gateActive (timed)
-                                if (gateActive) {
-                                    item {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
-                                    }
+                                if (uiState.gateActive) {
+                                    item { TimedFooter() }
                                 } else {
-                                    // Normal append load state indicator
                                     if (pagingItems.loadState.append is LoadState.Loading) {
-                                        item {
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(16.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) { CircularProgressIndicator() }
-                                        }
+                                        item { AppendLoadingIndicator() }
                                     }
                                     if (pagingItems.loadState.append is LoadState.Error) {
                                         val appendError = pagingItems.loadState.append as LoadState.Error
                                         item {
                                             ErrorScreen(
-                                                message = appendError.error.localizedMessage ?: "Load more failed",
+                                                title = Strings.LoadMoreFailed,
+                                                message = appendError.error.localizedMessage ?: Strings.LoadMoreFailed,
                                                 onRetry = { pagingItems.retry() }
                                             )
                                         }

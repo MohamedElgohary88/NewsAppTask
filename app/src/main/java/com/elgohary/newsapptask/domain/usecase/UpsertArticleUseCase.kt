@@ -11,4 +11,3 @@ class UpsertArticleUseCase @Inject constructor(
         repository.upsertBookmark(article)
     }
 }
-

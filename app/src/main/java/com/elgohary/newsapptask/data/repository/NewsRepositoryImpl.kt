@@ -4,11 +4,11 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.elgohary.newsapptask.data.local.dao.ArticleDao
-import com.elgohary.newsapptask.data.local.entity.ArticleEntity
 import com.elgohary.newsapptask.data.paging.NewsPagingSource
 import com.elgohary.newsapptask.data.remote.api.NewsApiService
+import com.elgohary.newsapptask.data.mapper.toEntity
+import com.elgohary.newsapptask.data.mapper.toDomain
 import com.elgohary.newsapptask.domain.model.Article
-import com.elgohary.newsapptask.domain.model.Source
 import com.elgohary.newsapptask.domain.repository.NewsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -26,40 +26,17 @@ class NewsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun upsertBookmark(article: Article) {
-        val entity = ArticleEntity(
-            sourceId = article.source?.id,
-            sourceName = article.source?.name,
-            author = article.author,
-            title = article.title,
-            description = article.description,
-            url = article.url,
-            urlToImage = article.urlToImage,
-            publishedAt = article.publishedAt,
-            content = article.content
-        )
-        articleDao.upsert(entity)
+        articleDao.upsert(article.toEntity())
     }
 
     override suspend fun deleteBookmark(article: Article) {
-        // Use URL as natural key to delete, avoiding primary-key mismatch with auto-generated id
         val url = article.url ?: return
         articleDao.deleteByUrl(url)
     }
 
     override fun getBookmarks(): Flow<List<Article>> {
         return articleDao.getArticles().map { list ->
-            list.map { entity ->
-                Article(
-                    source = Source(entity.sourceId, entity.sourceName),
-                    author = entity.author,
-                    title = entity.title,
-                    description = entity.description,
-                    url = entity.url,
-                    urlToImage = entity.urlToImage,
-                    publishedAt = entity.publishedAt,
-                    content = entity.content
-                )
-            }
+            list.map { entity -> entity.toDomain() }
         }
     }
 }

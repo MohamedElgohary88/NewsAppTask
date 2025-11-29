@@ -10,4 +10,3 @@ class SelectArticlesUseCase @Inject constructor(
 ) {
     operator fun invoke(): Flow<List<Article>> = repository.getBookmarks()
 }
-
